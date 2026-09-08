@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TableOne POS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <a class="brand" href="#">
+          <span class="brand-mark">T</span><span>table<span>one</span></span>
+        </a>
+        <nav aria-label="Primary navigation">
+          <a class="nav-link active" data-nav="Orders" href="#orders"><span>▦</span> Orders</a>
+          <a class="nav-link" data-nav="Menu" href="#menu"><span>☷</span> Menu</a>
+          <a class="nav-link" data-nav="Tables" href="#tables"><span>▤</span> Tables</a>
+          <a class="nav-link" data-nav="Customers" href="#customers"><span>♙</span> Customers</a>
+          <a class="nav-link" data-nav="Reports" href="#reports"><span>▥</span> Reports</a>
+        </nav>
+        <div class="sidebar-bottom">
+          <a class="nav-link" data-nav="Settings" href="#settings"><span>⚙</span> Settings</a>
+          <div class="profile"><div class="avatar">AM</div><div><strong>Alex Morgan</strong><small>Manager</small></div><button aria-label="Profile options">•••</button></div>
+        </div>
+      </aside>
+
+      <main>
+        <header class="topbar">
+          <div><p class="eyebrow">Tuesday, October 24</p><h1>Create order</h1></div>
+          <div class="topbar-actions"><button class="icon-button" aria-label="Notifications">♧<i></i></button><button class="help-button">? <span>Help center</span></button></div>
+        </header>
+
+        <section class="stats" aria-label="Today's statistics">
+          <article><span class="stat-icon revenue">$</span><div><small>Today's sales</small><strong>$1,284.50</strong><em>↗ 12.5% <span>vs. yesterday</span></em></div></article>
+          <article><span class="stat-icon orders">▤</span><div><small>Orders today</small><strong>48</strong><em>↗ 8.2% <span>vs. yesterday</span></em></div></article>
+          <article><span class="stat-icon tables">♧</span><div><small>Open tables</small><strong>6 <span>/ 18</span></strong><em class="neutral">2 awaiting payment</em></div></article>
+        </section>
+
+        <section class="workspace" id="orders">
+          <div class="menu-pane">
+            <div class="section-heading"><div><h2>Menu</h2><p>Add items to the current order</p></div><button class="secondary-button" id="manage-menu">⌘&nbsp; Manage menu</button></div>
+            <label class="search"><span>⌕</span><input id="search" type="search" placeholder="Search menu items…" autocomplete="off" /><kbd>⌘ K</kbd></label>
+            <div class="categories" id="categories" aria-label="Menu categories"></div>
+            <div class="menu-grid" id="menu-grid" aria-live="polite"></div>
+          </div>
+
+          <aside class="order-panel" aria-label="Current order">
+            <div class="order-head"><div><p class="eyebrow">Current order</p><h2 id="order-name">Walk-in order</h2></div><button class="more-button" id="order-options" aria-label="Order options">•••</button></div>
+            <button class="customer-button" id="add-customer"><span class="customer-icon">♙</span><span id="customer-label">Add customer</span><b>›</b></button>
+            <div class="order-divider"></div>
+            <div class="cart-title"><h3>Order items</h3><span id="item-count">0 items</span></div>
+            <div class="cart" id="cart"><div class="empty-cart"><span>⌑</span><strong>Your order is empty</strong><p>Select an item from the menu to get started.</p></div></div>
+            <div class="totals">
+              <div><span>Subtotal</span><strong id="subtotal">$0.00</strong></div>
+              <div><span>Tax <small>8%</small></span><strong id="tax">$0.00</strong></div>
+              <div class="total"><span>Total</span><strong id="total">$0.00</strong></div>
+            </div>
+            <div class="order-actions"><button class="destructive-button" id="clear-order">Clear order</button><button class="checkout-button" id="checkout" disabled>Checkout <span id="checkout-total">$0.00</span> →</button></div>
+          </aside>
+        </section>
+      </main>
+    </div>
+    <div class="toast" id="toast" role="status"></div>
+    <div class="modal-backdrop" id="modal-backdrop" hidden>
+      <section class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"></section>
+    </div>
+    <script src="app.js"></script>
+  </body>
+</html>
