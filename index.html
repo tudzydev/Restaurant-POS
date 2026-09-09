@@ -24,12 +24,20 @@
             <span>Point of Sale</span>
           </button>
           <button class="nav-link" data-view="history">
-            <span class="nav-icon">☷</span>
+            <span class="nav-icon">📜</span>
             <span>Order History</span>
+          </button>
+          <button class="nav-link" data-view="tables">
+            <span class="nav-icon">🪑</span>
+            <span>Table Map</span>
           </button>
           <button class="nav-link" data-view="menu-mgmt">
             <span class="nav-icon">🍴</span>
-            <span>Menu Catalog</span>
+            <span>Menu Manager</span>
+          </button>
+          <button class="nav-link" data-view="reports">
+            <span class="nav-icon">📊</span>
+            <span>Sales Analytics</span>
           </button>
         </nav>
 
@@ -223,7 +231,7 @@
                 <h2>Order History & Audit Log</h2>
                 <p>Track all completed and cancelled orders</p>
               </div>
-              <button class="secondary-button" id="btn-back-to-pos">← Back to POS</button>
+              <button class="secondary-button btn-go-pos">← Back to POS</button>
             </div>
             <div class="history-table-container">
               <table class="history-table">
@@ -232,9 +240,10 @@
                     <th>Order #</th>
                     <th>Time</th>
                     <th>Customer</th>
+                    <th>Dining</th>
                     <th>Items</th>
                     <th>Total</th>
-                    <th>Payment Method</th>
+                    <th>Payment</th>
                     <th>Status</th>
                     <th>Receipt</th>
                   </tr>
@@ -246,6 +255,87 @@
               <div class="empty-history" id="empty-history-view" style="display:none;">
                 <p>No orders processed yet today.</p>
               </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- View: Table Management -->
+        <section class="workspace-history" id="view-tables" style="display:none;">
+          <div class="history-panel">
+            <div class="section-heading">
+              <div>
+                <h2>Restaurant Floor & Table Map</h2>
+                <p>Monitor real-time table occupancy, guest parties, and assign tables</p>
+              </div>
+              <button class="secondary-button btn-go-pos">← Back to POS</button>
+            </div>
+            <div class="tables-grid" id="tables-grid">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+        </section>
+
+        <!-- View: Menu Catalog Manager -->
+        <section class="workspace-history" id="view-menu-mgmt" style="display:none;">
+          <div class="history-panel">
+            <div class="section-heading">
+              <div>
+                <h2>Menu Catalog Manager</h2>
+                <p>Manage restaurant dishes, pricing, and category classification</p>
+              </div>
+              <div style="display:flex; gap:10px;">
+                <button class="primary-button" id="btn-open-add-menu-modal">+ Add New Dish</button>
+                <button class="secondary-button btn-go-pos">← Back to POS</button>
+              </div>
+            </div>
+            <div class="history-table-container">
+              <table class="history-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Dish / Item Name</th>
+                    <th>Category</th>
+                    <th>Price</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="menu-mgmt-table-body">
+                  <!-- Populated dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- View: Sales Reports & Analytics -->
+        <section class="workspace-history" id="view-reports" style="display:none;">
+          <div class="history-panel">
+            <div class="section-heading">
+              <div>
+                <h2>Sales Analytics & Performance</h2>
+                <p>Daily sales summary, revenue breakdown, and bestselling dishes</p>
+              </div>
+              <button class="secondary-button btn-go-pos">← Back to POS</button>
+            </div>
+            <div class="reports-summary-grid">
+              <div class="report-metric-card">
+                <small>Gross Revenue</small>
+                <strong id="report-total-rev">฿0.00</strong>
+              </div>
+              <div class="report-metric-card">
+                <small>Total Completed Orders</small>
+                <strong id="report-completed-orders">0</strong>
+              </div>
+              <div class="report-metric-card">
+                <small>Average Order Value (AOV)</small>
+                <strong id="report-aov">฿0.00</strong>
+              </div>
+            </div>
+            <div class="section-heading" style="margin-top:24px;">
+              <h3>Top Selling Items</h3>
+            </div>
+            <div class="bestsellers-list" id="report-bestsellers-list">
+              <!-- Populated dynamically -->
             </div>
           </div>
         </section>

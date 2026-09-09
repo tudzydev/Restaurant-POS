@@ -1,0 +1,201 @@
+{
+  "menu": [
+    {
+      "id": 1,
+      "name": "Fried Rice (ข้าวผัด)",
+      "price": 60.0,
+      "category": "mains"
+    },
+    {
+      "id": 2,
+      "name": "Pad Thai (ผัดไทย)",
+      "price": 80.0,
+      "category": "mains"
+    },
+    {
+      "id": 3,
+      "name": "Green Curry (แกงเขียวหวาน)",
+      "price": 120.0,
+      "category": "mains"
+    },
+    {
+      "id": 4,
+      "name": "Tom Yum Kung (ต้มยำกุ้ง)",
+      "price": 150.0,
+      "category": "mains"
+    },
+    {
+      "id": 5,
+      "name": "Iced Tea (ชาเย็น)",
+      "price": 25.0,
+      "category": "drinks"
+    },
+    {
+      "id": 6,
+      "name": "Thai Milk Tea (ชาไทย)",
+      "price": 35.0,
+      "category": "drinks"
+    },
+    {
+      "id": 7,
+      "name": "Fresh Coconut (น้ำมะพร้าว)",
+      "price": 45.0,
+      "category": "drinks"
+    },
+    {
+      "id": 8,
+      "name": "Mango Sticky Rice (ข้าวเหนียวมะม่วง)",
+      "price": 90.0,
+      "category": "desserts"
+    },
+    {
+      "id": 9,
+      "name": "Coconut Ice Cream (ไอติมกะทิ)",
+      "price": 50.0,
+      "category": "desserts"
+    }
+  ],
+  "tables": [
+    {
+      "tableId": "T-01",
+      "capacity": 2,
+      "section": "Indoor",
+      "status": "available",
+      "currentOrderId": null
+    },
+    {
+      "tableId": "T-02",
+      "capacity": 4,
+      "section": "Indoor",
+      "status": "available",
+      "currentOrderId": null
+    },
+    {
+      "tableId": "T-03",
+      "capacity": 4,
+      "section": "Window",
+      "status": "available",
+      "currentOrderId": null
+    },
+    {
+      "tableId": "T-04",
+      "capacity": 6,
+      "section": "Window",
+      "status": "available",
+      "currentOrderId": null
+    },
+    {
+      "tableId": "T-05",
+      "capacity": 4,
+      "section": "Outdoor",
+      "status": "available",
+      "currentOrderId": null
+    },
+    {
+      "tableId": "T-06",
+      "capacity": 6,
+      "section": "Outdoor",
+      "status": "available",
+      "currentOrderId": null
+    },
+    {
+      "tableId": "VIP-01",
+      "capacity": 10,
+      "section": "VIP",
+      "status": "available",
+      "currentOrderId": null
+    }
+  ],
+  "orders": [
+    {
+      "orderId": 101,
+      "customer": {
+        "name": "Nong Somchai",
+        "phone": "081-999-8888"
+      },
+      "diningMode": "dinein",
+      "tableNumber": "T-01",
+      "items": [
+        {
+          "id": 1,
+          "name": "Fried Rice (ข้าวผัด)",
+          "price": 60.0,
+          "quantity": 2,
+          "subtotal": 120.0
+        }
+      ],
+      "subtotal": 120.0,
+      "tax": 8.4,
+      "total": 128.4,
+      "status": "completed",
+      "paymentMethod": "Cash",
+      "timestamp": "2026-09-09 14:25:13"
+    },
+    {
+      "orderId": 102,
+      "customer": {
+        "name": "Nong Somchai",
+        "phone": "081-999-8888"
+      },
+      "diningMode": "dinein",
+      "tableNumber": "T-01",
+      "items": [
+        {
+          "id": 1,
+          "name": "Fried Rice (ข้าวผัด)",
+          "price": 60.0,
+          "quantity": 2,
+          "subtotal": 120.0
+        }
+      ],
+      "subtotal": 120.0,
+      "tax": 8.4,
+      "total": 128.4,
+      "status": "completed",
+      "paymentMethod": "Cash",
+      "timestamp": "2026-09-09 14:26:09"
+    },
+    {
+      "orderId": 103,
+      "customer": {
+        "name": "Nong Somchai",
+        "phone": "081-999-8888"
+      },
+      "diningMode": "dinein",
+      "tableNumber": "T-01",
+      "items": [
+        {
+          "id": 1,
+          "name": "Fried Rice (ข้าวผัด)",
+          "price": 60.0,
+          "quantity": 2,
+          "subtotal": 120.0
+        }
+      ],
+      "subtotal": 120.0,
+      "tax": 8.4,
+      "total": 128.4,
+      "status": "completed",
+      "paymentMethod": "Cash",
+      "timestamp": "2026-09-09 14:28:03"
+    }
+  ],
+  "customers": [
+    {
+      "id": 1,
+      "name": "Walk-in Guest",
+      "phone": ""
+    },
+    {
+      "id": 2,
+      "name": "Somchai Prasert",
+      "phone": "081-234-5678"
+    },
+    {
+      "id": 3,
+      "name": "Apinya Wong",
+      "phone": "089-765-4321"
+    }
+  ],
+  "next_order_id": 104
+}

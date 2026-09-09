@@ -1,8 +1,8 @@
-# System Specification: Restaurant Point of Sale (POS)
+# Full System Specification: Restaurant Point of Sale (POS)
 
 ## 1. System Overview & Purpose
 
-The **Restaurant POS System** is an object-oriented point-of-sale domain model designed to handle customer orders, menu catalog management, bill calculation, and multi-channel payment processing (Cash, Credit Card, and QR Code).
+The **TableOne Restaurant POS System** is a full-stack, specification-driven point-of-sale platform. It connects restaurant floor operations, kitchen ticket workflows, table allocation, catalog management, and payment processing into a synchronized system.
 
 ---
 
@@ -19,6 +19,29 @@ classDiagram
         +orders: list[Order]
         +addMenuItem(item: MenuItem) void
         +createOrder(customer: Customer) Order
+    }
+
+    class TableStatus {
+        <<enumeration>>
+        AVAILABLE
+        OCCUPIED
+        RESERVED
+    }
+
+    class Table {
+        -str __table_id
+        -int __capacity
+        -str __section
+        -TableStatus __status
+        -int __current_order_id
+        +table_id: str
+        +capacity: int
+        +section: str
+        +status: TableStatus
+        +current_order_id: int
+        +occupy(order_id: int) void
+        +release() void
+        +reserve() void
     }
 
     class Customer {
@@ -43,9 +66,11 @@ classDiagram
         -int __id
         -str __name
         -float __price
+        -str __category
         +id: int
         +name: str
         +price: float
+        +category: str
         +getPrice() float
     }
 
@@ -107,6 +132,15 @@ classDiagram
         +pay() bool
     }
 
+    class POSStorage {
+        -str filepath
+        +load_all() dict
+        +save_all(data: dict) void
+        +add_order(order_dict: dict) void
+        +update_order_status(order_id: int, new_status: str) bool
+        +get_summary_reports() dict
+    }
+
     Restaurant "1" *-- "1" Menu : has
     Restaurant "1" *-- "0..*" Order : manages
     Order "1" --> "1" Customer : placed by
@@ -116,6 +150,8 @@ classDiagram
     Payment <|-- CashPayment
     Payment <|-- CreditCardPayment
     Payment <|-- QRPayment
+    POSStorage ..> Order : persists
+    Table --> TableStatus
 ```
 
 ---
@@ -136,114 +172,72 @@ stateDiagram-v2
     CANCELLED --> [*]
 ```
 
-### State Transition Invariants
-1. **`PENDING` $\to$ `CONFIRMED` via `checkout()`**:
-   - **Pre-condition**: Order items list must not be empty (`len(items) > 0`).
-   - **Pre-condition**: Current status must be `OrderStatus.PENDING`.
-   - **Post-condition**: Status changes to `OrderStatus.CONFIRMED`.
-   - **Error Handling**: Raises `ValueError("Order is empty")` or `ValueError("Order cannot be checked out")`.
-
-2. **`CONFIRMED` $\to$ `COMPLETED` via `complete()`**:
-   - **Pre-condition**: Current status must be `OrderStatus.CONFIRMED`.
-   - **Post-condition**: Status changes to `OrderStatus.COMPLETED`.
-   - **Error Handling**: Raises `ValueError("Order must be confirmed first")` if invoked in any other state.
-
-3. **Any non-completed state $\to$ `CANCELLED` via `cancel()`**:
-   - **Pre-condition**: Current status must **not** be `OrderStatus.COMPLETED`.
-   - **Post-condition**: Status changes to `OrderStatus.CANCELLED`.
-   - **Error Handling**: Raises `ValueError("Completed order cannot be cancelled")` if order is already completed.
-
-4. **Order Mutation Invariants (`addItem`, `removeItem`)**:
-   - **Pre-condition**: Order status must be strictly `OrderStatus.PENDING`. Cannot mutate items once checked out, completed, or cancelled.
-   - **Quantity Invariant**: Item quantity must be an integer strictly greater than zero (`quantity > 0`). Raises `ValueError` otherwise.
+### Invariant Rules
+1. **Empty Cart Checkout Block**: An order cannot be checked out with zero items. Raises `ValueError("Order is empty")`.
+2. **Post-Checkout Mutation Lock**: Once an order is checked out (`CONFIRMED`) or completed, no items can be added or removed.
+3. **Quantity Invariant**: Item quantities must be positive integers (`quantity > 0`).
+4. **Table Allocation Lock**: Occupying an already occupied table by a different order raises `ValueError`.
 
 ---
 
-## 4. Payment Specifications & Subtype Polymorphism
+## 4. Payment Specifications & Polymorphism
 
-All payment methods inherit from the abstract base class `Payment` and implement `pay() -> bool`.
-
-| Payment Type | Required Fields | Validation & Execution Rule | Success Condition |
+| Payment Method | Required Fields | Verification Contract | Success Criteria |
 | :--- | :--- | :--- | :--- |
-| **CashPayment** | `amount: float`<br>`receivedAmount: float` | Compares received cash to total owed. Computes change: `receivedAmount - amount`. | `receivedAmount >= amount` |
-| **CreditCardPayment** | `amount: float`<br>`cardNumber: str` | Strips whitespace/hyphens. Checks for exactly 16 numeric digits. Masks card (`****-****-****-XXXX`). | `len(cleaned) == 16 and cleaned.isdigit()` |
-| **QRPayment** | `amount: float`<br>`transactionId: str` | Validates transaction ID non-empty and non-whitespace. | `bool(transactionId.strip())` |
+| **Cash** | `amount`, `receivedAmount` | Evaluates received tender vs total owed; computes exact change. | `receivedAmount >= amount` |
+| **Credit Card** | `amount`, `cardNumber` | Strips formatting; validates exactly 16 numeric digits; masks output `****-****-****-XXXX`. | `len(digits) == 16 and digits.isdigit()` |
+| **QR Code** | `amount`, `transactionId` | Validates transaction ID non-empty and non-whitespace. | `bool(transactionId.strip())` |
 
 ---
 
-## 5. End-to-End Sequence Flow
+## 5. Full REST API Specification
+
+| Endpoint | Method | Payload / Params | Response | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `/api/menu` | `GET` | None | `list[MenuItem]` | Returns entire restaurant catalog. |
+| `/api/menu` | `POST` | `{name, price, category}` | `MenuItem` (201) | Adds new dish to catalog & persistent DB. |
+| `/api/menu/:id` | `DELETE` | Path `:id` | `{success: true}` (200) | Removes dish from menu. |
+| `/api/tables` | `GET` | None | `list[Table]` | Returns all restaurant floor tables & statuses. |
+| `/api/tables/status`| `POST` | `{tableId, status}` | `{success: true}` (200) | Updates table status (`available`/`occupied`). |
+| `/api/customers` | `GET` | None | `list[Customer]` | Returns registered customer profiles. |
+| `/api/customers` | `POST` | `{name, phone}` | `Customer` (201) | Registers customer profile. |
+| `/api/orders` | `GET` | None | `list[Order]` | Returns full audit log of all orders. |
+| `/api/orders/checkout` | `POST` | `{customerName, items, payment, diningMode, tableNumber}` | `{success, order}` (200) | Validates total, processes payment, persists order. |
+| `/api/reports/summary` | `GET` | None | `{totalOrders, completedOrders, totalRevenue, popularItems}` | Real-time analytics report. |
+
+---
+
+## 6. End-to-End Sequence Flow
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Staff as Cashier / System
-    participant R as Restaurant
-    participant C as Customer
-    participant M as Menu
-    participant O as Order
-    participant P as Payment (Cash/Card/QR)
+    actor Cashier
+    participant UI as Web POS (index.html)
+    participant API as Backend (server.py)
+    participant DB as Storage (pos_database.json)
 
-    Staff->>R: createOrder(customer)
-    R->>O: instantiate Order(id, customer, PENDING)
-    Staff->>O: addItem(menuItem, quantity)
-    O->>O: append OrderItem(menuItem, quantity)
-    Staff->>O: calculateTotal()
-    O-->>Staff: total amount
-    Staff->>P: pay()
-    alt Payment Succeeded
-        P-->>Staff: True (Receipt/Change displayed)
-        Staff->>O: checkout() -> status: CONFIRMED
-        Staff->>O: complete() -> status: COMPLETED
-    else Payment Failed
-        P-->>Staff: False (Error message)
-        Staff->>O: cancel() -> status: CANCELLED
-    end
+    Cashier->>UI: Select Dining Mode (Dine-in / Takeaway)
+    Cashier->>UI: Add Items to Cart
+    Cashier->>UI: Click Checkout
+    UI->>Cashier: Display Payment Dialog (Cash/Card/QR)
+    Cashier->>UI: Enter Payment Tender
+    UI->>API: POST /api/orders/checkout
+    API->>API: Calculate Total + 7% VAT & Process Payment
+    API->>DB: Save Order & Update Table Occupancy
+    API-->>UI: 200 OK {success: true, order}
+    UI->>Cashier: Render Printable 80mm Receipt
+    UI->>UI: Refresh Tables & Sales Analytics
 ```
 
 ---
 
-## 6. Specification-Driven Acceptance Criteria (BDD / Test Matrix)
+## 7. Automated Test Suite (40 Specification Tests)
 
-### Feature 1: Menu Management
-- **Scenario 1.1**: Adding item to menu
-  - **Given** an empty Menu
-  - **When** `addItem(MenuItem(1, "Fried Rice", 60.00))` is called
-  - **Then** `findItem(1)` returns the item and `items` count equals 1.
-- **Scenario 1.2**: Removing existing item
-  - **Given** a Menu with item ID 1
-  - **When** `removeItem(1)` is called
-  - **Then** method returns `True` and `findItem(1)` returns `None`.
-
-### Feature 2: Order Computation
-- **Scenario 2.1**: Subtotal calculation
-  - **Given** a `MenuItem` with price 60.00 and quantity 2
-  - **When** `calculate_subtotal()` is called on `OrderItem`
-  - **Then** subtotal is `120.00`.
-- **Scenario 2.2**: Order total calculation
-  - **Given** an Order with 2 Fried Rice (60.00 ea) and 1 Iced Tea (25.00 ea)
-  - **When** `order.calculateTotal()` is executed
-  - **Then** total is `145.00`.
-
-### Feature 3: Order State Enforcement
-- **Scenario 3.1**: Empty order checkout rejection
-  - **Given** an order with 0 items
-  - **When** `order.checkout()` is called
-  - **Then** `ValueError("Order is empty")` is raised.
-- **Scenario 3.2**: Direct completion rejection
-  - **Given** an order in `PENDING` status
-  - **When** `order.complete()` is called
-  - **Then** `ValueError("Order must be confirmed first")` is raised.
-- **Scenario 3.3**: Completed order cancellation rejection
-  - **Given** an order in `COMPLETED` status
-  - **When** `order.cancel()` is called
-  - **Then** `ValueError("Completed order cannot be cancelled")` is raised.
-
-### Feature 4: Payment Verification
-- **Scenario 4.1**: Insufficient cash payment
-  - **Given** total amount `100.00` and cash received `80.00`
-  - **When** `CashPayment.pay()` is called
-  - **Then** returns `False`.
-- **Scenario 4.2**: Valid credit card
-  - **Given** card number `"1234-5678-9012-3456"` and amount `100.00`
-  - **When** `CreditCardPayment.pay()` is called
-  - **Then** returns `True` and logs masked card number.
+All 40 acceptance criteria are validated automatically with `python3 -m unittest discover -s tests`:
+- [`tests/test_menu_spec.py`](file:///Users/mac/Desktop/workspace/Restaurant-POS/tests/test_menu_spec.py): Menu addition, removal, and lookup specs.
+- [`tests/test_order_spec.py`](file:///Users/mac/Desktop/workspace/Restaurant-POS/tests/test_order_spec.py): Order calculation, mutation guards, and state machine invariants.
+- [`tests/test_payment_spec.py`](file:///Users/mac/Desktop/workspace/Restaurant-POS/tests/test_payment_spec.py): Cash, Card, and QR payment contracts.
+- [`tests/test_e2e_flow_spec.py`](file:///Users/mac/Desktop/workspace/Restaurant-POS/tests/test_e2e_flow_spec.py): End-to-end integration workflows.
+- [`tests/test_full_system_spec.py`](file:///Users/mac/Desktop/workspace/Restaurant-POS/tests/test_full_system_spec.py): Table allocation, persistence, menu CRUD, and report analytics.
+- [`tests/test_server_spec.py`](file:///Users/mac/Desktop/workspace/Restaurant-POS/tests/test_server_spec.py): REST API contracts.

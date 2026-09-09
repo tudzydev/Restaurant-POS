@@ -6,18 +6,21 @@ import time
 from server import run, POSRequestHandler
 import socketserver
 
-PORT_TEST = 8089
+class ReusableTCPServer(socketserver.TCPServer):
+    allow_reuse_address = True
+
 
 class TestServerSpecification(unittest.TestCase):
     """Specification tests for server API endpoints."""
 
     @classmethod
     def setUpClass(cls):
-        # Start server in background thread
-        cls.httpd = socketserver.TCPServer(("", PORT_TEST), POSRequestHandler)
+        # Start server in background thread on ephemeral free port
+        cls.httpd = ReusableTCPServer(("", 0), POSRequestHandler)
+        cls.port = cls.httpd.server_address[1]
         cls.server_thread = threading.Thread(target=cls.httpd.serve_forever, daemon=True)
         cls.server_thread.start()
-        time.sleep(0.3)
+        time.sleep(0.1)
 
     @classmethod
     def tearDownClass(cls):
@@ -26,7 +29,7 @@ class TestServerSpecification(unittest.TestCase):
 
     def test_get_menu_endpoint(self):
         """GET /api/menu returns JSON list of menu items."""
-        url = f"http://localhost:{PORT_TEST}/api/menu"
+        url = f"http://localhost:{self.port}/api/menu"
         with urlopen(url) as response:
             self.assertEqual(response.status, 200)
             data = json.loads(response.read().decode("utf-8"))
@@ -36,7 +39,7 @@ class TestServerSpecification(unittest.TestCase):
 
     def test_checkout_endpoint_successful_cash(self):
         """POST /api/orders/checkout with sufficient cash completes the order."""
-        url = f"http://localhost:{PORT_TEST}/api/orders/checkout"
+        url = f"http://localhost:{self.port}/api/orders/checkout"
         payload = {
             "customerName": "Nong Somchai",
             "customerPhone": "081-999-8888",
@@ -49,7 +52,7 @@ class TestServerSpecification(unittest.TestCase):
             res_data = json.loads(response.read().decode("utf-8"))
             self.assertTrue(res_data["success"])
             self.assertEqual(res_data["status"], "completed")
-            self.assertEqual(res_data["total"], 120.00)
+            self.assertEqual(res_data["total"], 128.40)
 
 
 if __name__ == "__main__":

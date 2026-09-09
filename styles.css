@@ -1404,3 +1404,117 @@ kbd {
   }
 }
 
+/* Full System Views: Table Map */
+.tables-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.table-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+  transition: all 0.15s;
+}
+
+.table-card.occupied {
+  border-color: #f7b494;
+  background: #fff8f5;
+}
+
+.table-card.available {
+  border-color: #bcdbc4;
+  background: #f9fdfa;
+}
+
+.table-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.table-card-top h3 {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.table-card-body {
+  font-size: 12px;
+  color: var(--muted);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.badge-occupied {
+  background: #fde8e8;
+  color: #c53030;
+}
+
+.badge-available {
+  background: #eaf5ee;
+  color: #1e6f49;
+}
+
+/* Reports & Analytics */
+.reports-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.report-metric-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 18px;
+  box-shadow: var(--shadow-sm);
+}
+
+.report-metric-card small {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.report-metric-card strong {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--green-dark);
+  margin-top: 4px;
+  display: block;
+}
+
+.bestsellers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.bestseller-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+}
+
+.bestseller-rank {
+  font-weight: 700;
+  color: var(--muted);
+  margin-right: 12px;
+}
+
+

@@ -31,6 +31,15 @@
       status: "PENDING"
     },
     ordersHistory: [],
+    tables: [
+      { tableId: "T-01", capacity: 2, section: "Indoor", status: "available", currentOrderId: null },
+      { tableId: "T-02", capacity: 4, section: "Indoor", status: "available", currentOrderId: null },
+      { tableId: "T-03", capacity: 4, section: "Window", status: "available", currentOrderId: null },
+      { tableId: "T-04", capacity: 6, section: "Window", status: "available", currentOrderId: null },
+      { tableId: "T-05", capacity: 4, section: "Outdoor", status: "available", currentOrderId: null },
+      { tableId: "T-06", capacity: 6, section: "Outdoor", status: "available", currentOrderId: null },
+      { tableId: "VIP-01", capacity: 10, section: "VIP", status: "available", currentOrderId: null }
+    ],
     selectedCategory: "all",
     searchQuery: "",
     paymentMethod: "cash"
@@ -68,6 +77,15 @@
     currentDate: document.getElementById("current-date"),
     viewPos: document.getElementById("view-pos"),
     viewHistory: document.getElementById("view-history"),
+    viewTables: document.getElementById("view-tables"),
+    tablesGrid: document.getElementById("tables-grid"),
+    viewMenuMgmt: document.getElementById("view-menu-mgmt"),
+    menuMgmtTableBody: document.getElementById("menu-mgmt-table-body"),
+    viewReports: document.getElementById("view-reports"),
+    reportTotalRev: document.getElementById("report-total-rev"),
+    reportCompletedOrders: document.getElementById("report-completed-orders"),
+    reportAov: document.getElementById("report-aov"),
+    reportBestsellersList: document.getElementById("report-bestsellers-list"),
     historyTableBody: document.getElementById("history-table-body"),
     emptyHistoryView: document.getElementById("empty-history-view"),
 
@@ -284,17 +302,149 @@
           (o) => `
           <tr>
             <td><strong>#${o.orderId}</strong></td>
-            <td>${o.timestamp}</td>
-            <td>${o.customer.name}</td>
-            <td>${o.items.map((i) => `${i.quantity}x ${i.menuItem.name}`).join(", ")}</td>
+            <td>${o.timestamp || "-"}</td>
+            <td>${o.customer ? o.customer.name : "Walk-in"}</td>
+            <td><span class="badge">${o.diningMode === "takeaway" ? "Takeaway" : (o.tableNumber || "Dine-in")}</span></td>
+            <td>${(o.items || []).map((i) => `${i.quantity}x ${i.menuItem ? i.menuItem.name : (i.name || "Item")}`).join(", ")}</td>
             <td><strong>${formatMoney(o.total)}</strong></td>
-            <td><span class="badge">${o.paymentMethod.toUpperCase()}</span></td>
-            <td><span class="badge ${o.status === "COMPLETED" ? "badge-success" : "badge-pending"}">${o.status}</span></td>
+            <td><span class="badge">${(o.paymentMethod || "Cash").toUpperCase()}</span></td>
+            <td><span class="badge ${o.status === "completed" || o.status === "COMPLETED" ? "badge-success" : "badge-pending"}">${(o.status || "COMPLETED").toUpperCase()}</span></td>
             <td><button class="secondary-button btn-view-receipt" data-order="${o.orderId}">View</button></td>
           </tr>
         `
         )
         .join("");
+    }
+  }
+
+  function renderTables() {
+    if (!el.tablesGrid) return;
+    el.tablesGrid.innerHTML = state.tables
+      .map(
+        (t) => `
+        <div class="table-card ${t.status === "occupied" ? "occupied" : "available"}">
+          <div class="table-card-top">
+            <h3>${t.tableId}</h3>
+            <span class="badge ${t.status === "occupied" ? "badge-occupied" : "badge-available"}">${t.status.toUpperCase()}</span>
+          </div>
+          <div class="table-card-body">
+            <span>Section: <strong>${t.section}</strong></span>
+            <span>Capacity: <strong>${t.capacity} Guests</strong></span>
+            ${t.currentOrderId ? `<span>Active Order: <strong>#${t.currentOrderId}</strong></span>` : `<span>Status: <strong>Ready for seating</strong></span>`}
+          </div>
+          <div>
+            <button class="secondary-button btn-toggle-table" data-id="${t.tableId}" data-status="${t.status}">
+              ${t.status === "occupied" ? "🟢 Mark Available" : "🔴 Seat Guests"}
+            </button>
+          </div>
+        </div>
+      `
+      )
+      .join("");
+  }
+
+  function renderMenuMgmt() {
+    if (!el.menuMgmtTableBody) return;
+    el.menuMgmtTableBody.innerHTML = state.menuItems
+      .map(
+        (item) => `
+        <tr>
+          <td><strong>#${item.id}</strong></td>
+          <td><strong>${item.name}</strong></td>
+          <td><span class="menu-card-badge">${item.category || "mains"}</span></td>
+          <td><strong>${formatMoney(item.price)}</strong></td>
+          <td>
+            <button class="destructive-button btn-delete-dish" data-id="${item.id}" style="padding: 4px 10px; font-size: 11px;">
+              🗑️ Delete
+            </button>
+          </td>
+        </tr>
+      `
+      )
+      .join("");
+  }
+
+  function renderReports() {
+    const completed = state.ordersHistory.filter(
+      (o) => (o.status || "").toLowerCase() === "completed"
+    );
+    const totalRev = completed.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+    const aov = completed.length > 0 ? totalRev / completed.length : 0;
+
+    if (el.reportTotalRev) el.reportTotalRev.textContent = formatMoney(totalRev);
+    if (el.reportCompletedOrders) el.reportCompletedOrders.textContent = completed.length;
+    if (el.reportAov) el.reportAov.textContent = formatMoney(aov);
+
+    // Calculate bestsellers
+    const counts = {};
+    completed.forEach((o) => {
+      (o.items || []).forEach((row) => {
+        const name = (row.menuItem ? row.menuItem.name : row.name) || "Dish";
+        const qty = Number(row.quantity) || 1;
+        counts[name] = (counts[name] || 0) + qty;
+      });
+    });
+
+    const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+
+    if (el.reportBestsellersList) {
+      if (sorted.length === 0) {
+        el.reportBestsellersList.innerHTML = `<p style="color:var(--muted); font-size:13px;">No completed sales records yet.</p>`;
+      } else {
+        el.reportBestsellersList.innerHTML = sorted
+          .map(
+            ([name, qty], idx) => `
+            <div class="bestseller-row">
+              <div>
+                <span class="bestseller-rank">#${idx + 1}</span>
+                <strong>${name}</strong>
+              </div>
+              <span class="badge badge-success">${qty} sold</span>
+            </div>
+          `
+          )
+          .join("");
+      }
+    }
+  }
+
+  async function syncFromBackend() {
+    try {
+      const resMenu = await fetch("/api/menu");
+      if (resMenu.ok) {
+        const data = await resMenu.json();
+        if (Array.isArray(data) && data.length > 0) {
+          state.menuItems = data;
+          renderMenu();
+          renderMenuMgmt();
+        }
+      }
+
+      const resTables = await fetch("/api/tables");
+      if (resTables.ok) {
+        const data = await resTables.json();
+        if (Array.isArray(data) && data.length > 0) {
+          state.tables = data;
+          renderTables();
+        }
+      }
+
+      const resOrders = await fetch("/api/orders");
+      if (resOrders.ok) {
+        const data = await resOrders.json();
+        if (Array.isArray(data) && data.length > 0) {
+          state.ordersHistory = data.reverse();
+          renderStatsAndHistory();
+          renderReports();
+        }
+      }
+
+      const statusDot = document.querySelector(".status-dot");
+      const statusText = document.getElementById("backend-status");
+      if (statusDot) statusDot.classList.add("online");
+      if (statusText) statusText.textContent = "Online (API Connected)";
+    } catch (err) {
+      console.log("Operating in standalone offline mode");
     }
   }
 
@@ -486,6 +636,36 @@
 
     state.ordersHistory.unshift(finishedOrder);
     renderStatsAndHistory();
+    renderReports();
+
+    // Mark table as occupied in local table state if dine-in
+    if (state.activeOrder.diningMode === "dinein") {
+      const tbl = state.tables.find(t => t.tableId === state.activeOrder.tableNumber);
+      if (tbl) {
+        tbl.status = "occupied";
+        tbl.currentOrderId = finishedOrder.orderId;
+        renderTables();
+      }
+    }
+
+    // Sync with backend API
+    fetch("/api/orders/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        customerName: finishedOrder.customer.name,
+        customerPhone: finishedOrder.customer.phone,
+        diningMode: finishedOrder.diningMode,
+        tableNumber: state.activeOrder.tableNumber,
+        items: finishedOrder.items.map((i) => ({ id: i.menuItem.id, quantity: i.quantity })),
+        payment: {
+          method: paymentDetails.method.toLowerCase(),
+          receivedAmount: paymentDetails.receivedAmount,
+          cardNumber: paymentDetails.maskedCard,
+          transactionId: paymentDetails.transactionId
+        }
+      })
+    }).catch(() => {});
 
     // Populate Receipt
     el.receiptOrderId.textContent = `#${finishedOrder.orderId}`;
@@ -738,33 +918,93 @@
       document.getElementById("new-item-price").value = "";
     });
 
-    // Navigation switching (POS / History)
-    document.querySelectorAll(".nav-link").forEach((link) => {
-      link.addEventListener("click", () => {
-        document.querySelectorAll(".nav-link").forEach((l) => l.classList.remove("active"));
-        link.classList.add("active");
-        const view = link.dataset.view;
-        if (view === "history") {
-          el.viewPos.style.display = "none";
-          el.viewHistory.style.display = "block";
-          document.getElementById("page-title").textContent = "Order History";
+    // Navigation Views Mapping
+    const views = {
+      pos: { el: el.viewPos, title: "Order Terminal", display: "grid" },
+      history: { el: el.viewHistory, title: "Order History & Audit", display: "block" },
+      tables: { el: el.viewTables, title: "Restaurant Table Map", display: "block", onOpen: renderTables },
+      "menu-mgmt": { el: el.viewMenuMgmt, title: "Menu Catalog Manager", display: "block", onOpen: renderMenuMgmt },
+      reports: { el: el.viewReports, title: "Sales Analytics & Reports", display: "block", onOpen: renderReports }
+    };
+
+    function switchView(targetView) {
+      document.querySelectorAll(".nav-link").forEach((l) => {
+        l.classList.toggle("active", l.dataset.view === targetView);
+      });
+
+      Object.entries(views).forEach(([key, config]) => {
+        if (!config.el) return;
+        if (key === targetView) {
+          config.el.style.display = config.display;
+          const pageTitle = document.getElementById("page-title");
+          if (pageTitle) pageTitle.textContent = config.title;
+          if (config.onOpen) config.onOpen();
         } else {
-          el.viewPos.style.display = "grid";
-          el.viewHistory.style.display = "none";
-          document.getElementById("page-title").textContent = "Order Terminal";
+          config.el.style.display = "none";
         }
       });
+    }
+
+    document.querySelectorAll(".nav-link").forEach((link) => {
+      link.addEventListener("click", () => switchView(link.dataset.view));
     });
 
-    document.getElementById("btn-view-history").addEventListener("click", () => {
-      const histLink = document.querySelector(".nav-link[data-view='history']");
-      if (histLink) histLink.click();
+    document.querySelectorAll(".btn-go-pos").forEach((btn) => {
+      btn.addEventListener("click", () => switchView("pos"));
     });
 
-    document.getElementById("btn-back-to-pos").addEventListener("click", () => {
-      const posLink = document.querySelector(".nav-link[data-view='pos']");
-      if (posLink) posLink.click();
-    });
+    const btnViewHistory = document.getElementById("btn-view-history");
+    if (btnViewHistory) {
+      btnViewHistory.addEventListener("click", () => switchView("history"));
+    }
+
+    // Table Status Toggle Handler
+    if (el.tablesGrid) {
+      el.tablesGrid.addEventListener("click", async (e) => {
+        const btn = e.target.closest(".btn-toggle-table");
+        if (!btn) return;
+        const tableId = btn.dataset.id;
+        const currStatus = btn.dataset.status;
+        const newStatus = currStatus === "occupied" ? "available" : "occupied";
+
+        const tbl = state.tables.find((t) => t.tableId === tableId);
+        if (tbl) {
+          tbl.status = newStatus;
+          if (newStatus === "available") tbl.currentOrderId = null;
+          renderTables();
+        }
+
+        try {
+          await fetch("/api/tables/status", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ tableId, status: newStatus })
+          });
+          showToast(`Table ${tableId} is now ${newStatus.toUpperCase()}`);
+        } catch (err) {}
+      });
+    }
+
+    // Menu Management Delete Handler
+    if (el.menuMgmtTableBody) {
+      el.menuMgmtTableBody.addEventListener("click", async (e) => {
+        const btn = e.target.closest(".btn-delete-dish");
+        if (!btn) return;
+        const dishId = parseInt(btn.dataset.id, 10);
+        state.menuItems = state.menuItems.filter((m) => m.id !== dishId);
+        renderMenu();
+        renderMenuMgmt();
+        showToast("Dish removed from catalog");
+        try {
+          await fetch(`/api/menu/${dishId}`, { method: "DELETE" });
+        } catch (err) {}
+      });
+    }
+
+    const btnOpenAddMenu = document.getElementById("btn-open-add-menu-modal");
+    if (btnOpenAddMenu) {
+      btnOpenAddMenu.addEventListener("click", () => openModal(el.modalNewItem));
+    }
 
     // Receipt click in history
     el.historyTableBody.addEventListener("click", (e) => {
@@ -774,19 +1014,19 @@
       const found = state.ordersHistory.find((o) => o.orderId === orderId);
       if (found) {
         el.receiptOrderId.textContent = `#${found.orderId}`;
-        el.receiptCustomer.textContent = found.customer.name;
+        el.receiptCustomer.textContent = found.customer ? found.customer.name : "Walk-in";
         if (el.receiptDiningMode) el.receiptDiningMode.textContent = found.tableNumber || "Dine-in";
-        el.receiptTimestamp.textContent = found.timestamp;
+        el.receiptTimestamp.textContent = found.timestamp || "";
         el.receiptSubtotal.textContent = formatMoney(found.subtotal);
         el.receiptTax.textContent = formatMoney(found.tax);
         el.receiptTotal.textContent = formatMoney(found.total);
-        el.receiptPaymentMethod.textContent = found.paymentMethod;
-        el.receiptItemsList.innerHTML = found.items
+        el.receiptPaymentMethod.textContent = found.paymentMethod || "Cash";
+        el.receiptItemsList.innerHTML = (found.items || [])
           .map(
             (i) => `
             <div>
-              <span>${i.quantity}x ${i.menuItem.name}</span>
-              <span>${formatMoney(i.menuItem.price * i.quantity)}</span>
+              <span>${i.quantity}x ${i.menuItem ? i.menuItem.name : (i.name || "Dish")}</span>
+              <span>${formatMoney((i.menuItem ? i.menuItem.price : i.price) * i.quantity)}</span>
             </div>
           `
           )
@@ -797,20 +1037,26 @@
   }
 
   // --- Initialization ---
-  function init() {
+  async function init() {
     const today = new Date();
-    el.currentDate.textContent = today.toLocaleDateString(undefined, {
-      weekday: "long",
-      month: "long",
-      day: "numeric"
-    });
+    if (el.currentDate) {
+      el.currentDate.textContent = today.toLocaleDateString(undefined, {
+        weekday: "long",
+        month: "long",
+        day: "numeric"
+      });
+    }
 
     closeModal();
     renderMenu();
     renderCustomerInfo();
     renderCart();
     renderStatsAndHistory();
+    renderTables();
+    renderMenuMgmt();
+    renderReports();
     setupEventListeners();
+    await syncFromBackend();
   }
 
   // Run on DOM ready
