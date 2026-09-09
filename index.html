@@ -18,24 +18,56 @@
           <span>Table<span>One</span></span>
         </a>
 
-        <nav aria-label="Primary navigation">
-          <button class="nav-link active" data-view="pos">
+        <!-- Interactive Role Switcher -->
+        <div class="role-switcher-card">
+          <span class="role-label">Active Role</span>
+          <div class="role-buttons-grid">
+            <button class="role-btn active" data-role="cashier" title="Front of House Cashier & Waitstaff">
+              <span class="role-icon">🧑‍💼</span>
+              <span>Cashier</span>
+            </button>
+            <button class="role-btn" data-role="kitchen" title="Kitchen Display System (BOH)">
+              <span class="role-icon">👨‍🍳</span>
+              <span>Kitchen</span>
+            </button>
+            <button class="role-btn" data-role="manager" title="Restaurant Manager & Reports">
+              <span class="role-icon">👔</span>
+              <span>Manager</span>
+            </button>
+            <button class="role-btn" data-role="customer" title="Customer Self-Order Kiosk">
+              <span class="role-icon">📱</span>
+              <span>Kiosk</span>
+            </button>
+          </div>
+        </div>
+
+        <nav aria-label="Primary navigation" id="primary-nav">
+          <button class="nav-link active" data-view="pos" data-roles="cashier,manager">
             <span class="nav-icon">▦</span>
             <span>Point of Sale</span>
           </button>
-          <button class="nav-link" data-view="history">
-            <span class="nav-icon">📜</span>
-            <span>Order History</span>
+          <button class="nav-link" data-view="kds" data-roles="kitchen,manager,cashier">
+            <span class="nav-icon">🍳</span>
+            <span>Kitchen Display (KDS)</span>
+            <span class="nav-badge" id="kds-pending-badge" style="display:none;">0</span>
           </button>
-          <button class="nav-link" data-view="tables">
+          <button class="nav-link" data-view="customer-kiosk" data-roles="customer,cashier,manager">
+            <span class="nav-icon">📱</span>
+            <span>Customer Kiosk</span>
+          </button>
+          <button class="nav-link" data-view="tables" data-roles="cashier,manager">
             <span class="nav-icon">🪑</span>
             <span>Table Map</span>
           </button>
-          <button class="nav-link" data-view="menu-mgmt">
+          <button class="nav-link" data-view="history" data-roles="cashier,kitchen,manager">
+            <span class="nav-icon">📜</span>
+            <span>Order History</span>
+          </button>
+          <button class="nav-link" data-view="menu-mgmt" data-roles="manager">
             <span class="nav-icon">🍴</span>
             <span>Menu Manager</span>
           </button>
-          <button class="nav-link" data-view="reports">
+          <button class="nav-link" data-view="reports" data-roles="manager">
             <span class="nav-icon">📊</span>
             <span>Sales Analytics</span>
           </button>
@@ -46,11 +78,11 @@
             <span class="status-dot online"></span>
             <span id="backend-status">Ready (Local Engine)</span>
           </div>
-          <div class="profile">
-            <div class="avatar">SC</div>
+          <div class="profile" id="user-profile-card">
+            <div class="avatar" id="profile-avatar">SC</div>
             <div class="profile-info">
-              <strong>Somchai Cashier</strong>
-              <small>Terminal #01</small>
+              <strong id="profile-name">Somchai Cashier</strong>
+              <small id="profile-role">Terminal #01 (FOH)</small>
             </div>
           </div>
         </div>
@@ -336,6 +368,117 @@
             </div>
             <div class="bestsellers-list" id="report-bestsellers-list">
               <!-- Populated dynamically -->
+            </div>
+          </div>
+        </section>
+
+        <!-- View: Kitchen Display System (KDS) -->
+        <section class="workspace-history" id="view-kds" style="display:none;">
+          <div class="history-panel">
+            <div class="kds-header">
+              <div>
+                <h2>Kitchen Display System (KDS)</h2>
+                <p>Live order tickets, prep status, and station bump bar</p>
+              </div>
+              <div class="kds-filter-pills">
+                <button class="kds-pill active" data-kds-filter="all">All Active (<span id="kds-count-all">0</span>)</button>
+                <button class="kds-pill" data-kds-filter="pending">🔥 Pending (<span id="kds-count-pending">0</span>)</button>
+                <button class="kds-pill" data-kds-filter="cooking">🍳 Cooking (<span id="kds-count-cooking">0</span>)</button>
+                <button class="kds-pill" data-kds-filter="ready">✅ Ready (<span id="kds-count-ready">0</span>)</button>
+                <button class="secondary-button" id="btn-refresh-kds" title="Refresh Tickets">🔄 Refresh</button>
+              </div>
+            </div>
+            <div class="kds-grid" id="kds-tickets-grid">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+        </section>
+
+        <!-- View: Customer Self-Ordering Kiosk -->
+        <section class="workspace-history" id="view-customer-kiosk" style="display:none;">
+          <div class="kiosk-wrapper">
+            <!-- Kiosk Welcome Banner & Dining Preference -->
+            <div class="kiosk-banner">
+              <div>
+                <h2>🍽️ Welcome to TableOne</h2>
+                <p>Tap dishes to build your meal, then send directly to our kitchen!</p>
+              </div>
+              <div class="kiosk-dining-config">
+                <label for="kiosk-dining-mode">Dining:</label>
+                <select id="kiosk-dining-mode">
+                  <option value="dinein">🍽️ Dine-in</option>
+                  <option value="takeaway">🥡 Takeaway</option>
+                </select>
+                <label for="kiosk-table-select" id="kiosk-table-label">Table:</label>
+                <select id="kiosk-table-select">
+                  <option value="T-01">T-01 (Indoor)</option>
+                  <option value="T-02">T-02 (Indoor)</option>
+                  <option value="T-03">T-03 (Window)</option>
+                  <option value="T-04">T-04 (Window)</option>
+                  <option value="T-05">T-05 (Outdoor)</option>
+                  <option value="T-06">T-06 (Outdoor)</option>
+                  <option value="VIP-01">VIP Room</option>
+                </select>
+                <input type="text" id="kiosk-guest-name" placeholder="Your Name (Optional)" style="max-width:140px;" />
+              </div>
+            </div>
+
+            <!-- Categories Tabs for Kiosk -->
+            <div class="categories" id="kiosk-category-pills" role="tablist">
+              <button class="category-pill active" data-cat="all">All Specialties</button>
+              <button class="category-pill" data-cat="mains">🍜 Mains</button>
+              <button class="category-pill" data-cat="drinks">🥤 Refreshments</button>
+              <button class="category-pill" data-cat="desserts">🍨 Desserts</button>
+            </div>
+
+            <!-- Kiosk Main 2-Column Interface -->
+            <div class="kiosk-layout">
+              <!-- Left: Big Food Grid -->
+              <div class="menu-grid" id="kiosk-menu-grid">
+                <!-- Rendered dynamically -->
+              </div>
+
+              <!-- Right: Sticky Order Tray -->
+              <aside class="kiosk-tray-panel">
+                <div class="cart-title">
+                  <h3>Your Tray</h3>
+                  <span id="kiosk-tray-count">0 items</span>
+                </div>
+
+                <div class="kiosk-tray-items" id="kiosk-tray-items">
+                  <div class="empty-cart" id="kiosk-empty-tray">
+                    <span class="empty-cart-icon">🍱</span>
+                    <strong>Your tray is empty</strong>
+                    <p>Select items from our menu to place your order.</p>
+                  </div>
+                  <div class="cart-items-list" id="kiosk-tray-list" style="display:none;"></div>
+                </div>
+
+                <label class="form-field" style="margin-bottom:8px;">
+                  <span style="font-size:12px; font-weight:600;">Special Instructions:</span>
+                  <input type="text" id="kiosk-order-notes" placeholder="e.g. Less spicy, no onions, extra ice" class="kiosk-notes-box" />
+                </label>
+
+                <div class="totals" style="margin-bottom:12px;">
+                  <div>
+                    <span>Subtotal</span>
+                    <strong id="kiosk-subtotal">฿0.00</strong>
+                  </div>
+                  <div>
+                    <span>VAT (7%)</span>
+                    <strong id="kiosk-tax">฿0.00</strong>
+                  </div>
+                  <div class="total-row">
+                    <span>Total Due</span>
+                    <strong id="kiosk-total">฿0.00</strong>
+                  </div>
+                </div>
+
+                <button class="btn-send-kitchen" id="btn-kiosk-send" disabled>
+                  <span>🚀 Send to Kitchen</span>
+                  <span id="kiosk-send-amount">฿0.00</span>
+                </button>
+              </aside>
             </div>
           </div>
         </section>

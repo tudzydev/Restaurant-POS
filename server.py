@@ -183,6 +183,8 @@ class POSRequestHandler(http.server.SimpleHTTPRequestHandler):
                     txn_id = payment_info.get("transactionId", "")
                     payment = QRPayment(grand_total, txn_id)
                     payment_success = payment.pay()
+                elif method in ("counter", "pay_at_counter", "kiosk"):
+                    payment_success = True
                 else:
                     raise ValueError(f"Unknown payment method: {method}")
 
@@ -191,8 +193,10 @@ class POSRequestHandler(http.server.SimpleHTTPRequestHandler):
                     self.send_json(400, {"error": "Payment failed", "status": order.orderStatus.value})
                     return
 
+                target_status = body.get("status", "completed" if method not in ("counter", "pay_at_counter", "kiosk") else "pending")
                 order.checkout()
-                order.complete()
+                if target_status == "completed":
+                    order.complete()
 
                 # Update table status if dine-in
                 if dining_mode == "dinein":
@@ -206,12 +210,13 @@ class POSRequestHandler(http.server.SimpleHTTPRequestHandler):
                     "customer": {"name": customer_name, "phone": customer_phone},
                     "diningMode": dining_mode,
                     "tableNumber": table_number,
+                    "notes": body.get("notes", ""),
                     "items": order_items_payload,
                     "subtotal": round(subtotal, 2),
                     "tax": round(tax, 2),
                     "total": round(grand_total, 2),
-                    "status": "completed",
-                    "paymentMethod": method.capitalize(),
+                    "status": target_status,
+                    "paymentMethod": method.capitalize() if method not in ("counter", "pay_at_counter", "kiosk") else "Pay at Counter",
                     "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 }
 

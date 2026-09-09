@@ -23,6 +23,11 @@ A modern, specification-driven Point of Sale (POS) and restaurant management pla
 
 ## 🌟 System Highlights
 
+- **👥 Multi-Role Interface (Covers Every Restaurant Role)**:
+  - 🧑‍💼 **Cashier / Waitstaff (FOH)**: Ultra-fast order entry, keyboard shortcuts (`/` search, `Esc`), cash change calculator, card/QR tender, thermal receipt printing, table seating.
+  - 👨‍🍳 **Kitchen Staff (BOH / KDS)**: Real-time Kitchen Display System ticket board with station status (`Pending` -> `Cooking` -> `Ready` -> `Complete`), urgency timers, bump bar.
+  - 👔 **Restaurant Manager**: Menu catalog CRUD (dish additions, category & pricing adjustments, deletions), daily sales KPIs, revenue analytics, bestsellers ranking.
+  - 📱 **Customer Self-Order Kiosk**: Guest ordering mode with appetite food tiles, dining preferences, special cooking notes ("less spicy", "no ice"), and counter/QR dispatch.
 - **⚡ Fast Cashier Operations**: Keyboard shortcuts (`/` for instant search, `Esc` to dismiss dialogs, `Enter` to confirm payment).
 - **📱 Touch Ergonomic Design**: Generous $\ge 44\text{px}$ touch targets, visual cart steppers, and responsive layout for tablets and desktops.
 - **🍽️ Dining Mode & Table Management**: Live floor map with table status (`Available` vs `Occupied`), guest capacities, and dine-in/takeaway toggles.
@@ -30,6 +35,7 @@ A modern, specification-driven Point of Sale (POS) and restaurant management pla
   - **Cash**: Quick bank note buttons (`Exact`, `฿100`, `฿500`, `฿1,000`) and live change computation.
   - **Credit Card**: 16-digit numeric card verification and `****-****-****-XXXX` masking.
   - **QR Code**: Digital wallet / PromptPay simulated authorization code.
+  - **Pay at Counter**: Seamless bridge for customer kiosk orders.
 - **🧾 Thermal Receipt Ready**: Dedicated `@media print` 80mm thermal receipt printing layout.
 - **💾 Persistent JSON Database**: All orders, tables, customer profiles, and catalog edits persist across server restarts in `data/pos_database.json`.
 - **📊 Real-Time Analytics**: Gross revenue, completed orders count, Average Order Value (AOV), and top-selling dishes breakdown.

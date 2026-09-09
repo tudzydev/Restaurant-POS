@@ -42,7 +42,11 @@
     ],
     selectedCategory: "all",
     searchQuery: "",
-    paymentMethod: "cash"
+    paymentMethod: "cash",
+    currentRole: "cashier",
+    kdsFilter: "all",
+    kioskTray: [],
+    kioskCategory: "all"
   };
 
   // --- DOM Elements ---
@@ -88,6 +92,35 @@
     reportBestsellersList: document.getElementById("report-bestsellers-list"),
     historyTableBody: document.getElementById("history-table-body"),
     emptyHistoryView: document.getElementById("empty-history-view"),
+
+    // Multi-Role & Profile
+    profileAvatar: document.getElementById("profile-avatar"),
+    profileName: document.getElementById("profile-name"),
+    profileRole: document.getElementById("profile-role"),
+
+    // Kitchen Display System (KDS)
+    viewKds: document.getElementById("view-kds"),
+    kdsTicketsGrid: document.getElementById("kds-tickets-grid"),
+    kdsPendingBadge: document.getElementById("kds-pending-badge"),
+    btnRefreshKds: document.getElementById("btn-refresh-kds"),
+
+    // Customer Self-Ordering Kiosk
+    viewCustomerKiosk: document.getElementById("view-customer-kiosk"),
+    kioskMenuGrid: document.getElementById("kiosk-menu-grid"),
+    kioskTrayItems: document.getElementById("kiosk-tray-items"),
+    kioskEmptyTray: document.getElementById("kiosk-empty-tray"),
+    kioskTrayList: document.getElementById("kiosk-tray-list"),
+    kioskTrayCount: document.getElementById("kiosk-tray-count"),
+    kioskSubtotal: document.getElementById("kiosk-subtotal"),
+    kioskTax: document.getElementById("kiosk-tax"),
+    kioskTotal: document.getElementById("kiosk-total"),
+    btnKioskSend: document.getElementById("btn-kiosk-send"),
+    kioskSendAmount: document.getElementById("kiosk-send-amount"),
+    kioskDiningMode: document.getElementById("kiosk-dining-mode"),
+    kioskTableSelect: document.getElementById("kiosk-table-select"),
+    kioskGuestName: document.getElementById("kiosk-guest-name"),
+    kioskOrderNotes: document.getElementById("kiosk-order-notes"),
+    kioskCategoryPills: document.getElementById("kiosk-category-pills"),
 
     // Modals
     modalBackdrop: document.getElementById("modal-backdrop"),
@@ -405,6 +438,309 @@
           )
           .join("");
       }
+    }
+  }
+
+  // --- HTML Escaping Helper ---
+  function escapeHtml(str) {
+    return String(str || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  // --- Multi-Role Engine & Persona Profiles ---
+  const ROLES = {
+    cashier: {
+      name: "Somchai Prasert",
+      roleText: "Cashier #01 (Front of House)",
+      avatar: "SC",
+      defaultView: "pos"
+    },
+    kitchen: {
+      name: "Chef Anand",
+      roleText: "Head Chef (Kitchen BOH)",
+      avatar: "CA",
+      defaultView: "kds"
+    },
+    manager: {
+      name: "Maria Santos",
+      roleText: "General Manager (Admin)",
+      avatar: "MS",
+      defaultView: "reports"
+    },
+    customer: {
+      name: "Self-Service Guest",
+      roleText: "Customer Ordering Kiosk",
+      avatar: "👤",
+      defaultView: "customer-kiosk"
+    }
+  };
+
+  function setRole(roleKey) {
+    if (!ROLES[roleKey]) return;
+    state.currentRole = roleKey;
+
+    document.querySelectorAll(".role-btn").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.role === roleKey);
+    });
+
+    const r = ROLES[roleKey];
+    if (el.profileAvatar) el.profileAvatar.textContent = r.avatar;
+    if (el.profileName) el.profileName.textContent = r.name;
+    if (el.profileRole) el.profileRole.textContent = r.roleText;
+
+    // Filter primary nav links by role
+    document.querySelectorAll("#primary-nav .nav-link").forEach((link) => {
+      const rolesAttr = link.dataset.roles || "";
+      const allowed = rolesAttr.split(",").map((s) => s.trim());
+      if (allowed.includes(roleKey)) {
+        link.style.display = "flex";
+      } else {
+        link.style.display = "none";
+      }
+    });
+
+    switchView(r.defaultView);
+    showToast(`Switched to ${r.name} (${roleKey.toUpperCase()})`);
+  }
+
+  // --- Kitchen Display System (KDS) Logic ---
+  async function renderKds() {
+    if (!el.kdsTicketsGrid) return;
+
+    try {
+      const res = await fetch("/api/orders");
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) state.ordersHistory = data.reverse();
+      }
+    } catch (e) {}
+
+    const activeOrders = state.ordersHistory.filter((o) =>
+      ["pending", "cooking", "ready"].includes((o.status || "").toLowerCase())
+    );
+
+    const countAll = document.getElementById("kds-count-all");
+    const countPending = document.getElementById("kds-count-pending");
+    const countCooking = document.getElementById("kds-count-cooking");
+    const countReady = document.getElementById("kds-count-ready");
+
+    const pendingList = activeOrders.filter((o) => (o.status || "").toLowerCase() === "pending");
+    const cookingList = activeOrders.filter((o) => (o.status || "").toLowerCase() === "cooking");
+    const readyList = activeOrders.filter((o) => (o.status || "").toLowerCase() === "ready");
+
+    if (countAll) countAll.textContent = activeOrders.length;
+    if (countPending) countPending.textContent = pendingList.length;
+    if (countCooking) countCooking.textContent = cookingList.length;
+    if (countReady) countReady.textContent = readyList.length;
+
+    if (el.kdsPendingBadge) {
+      if (pendingList.length > 0) {
+        el.kdsPendingBadge.textContent = pendingList.length;
+        el.kdsPendingBadge.style.display = "inline-block";
+      } else {
+        el.kdsPendingBadge.style.display = "none";
+      }
+    }
+
+    let filtered = activeOrders;
+    if (state.kdsFilter !== "all") {
+      filtered = activeOrders.filter((o) => (o.status || "").toLowerCase() === state.kdsFilter);
+    }
+
+    if (filtered.length === 0) {
+      el.kdsTicketsGrid.innerHTML = `
+        <div class="empty-kds">
+          <span class="empty-kds-icon">✨</span>
+          <h3>All Kitchen Tickets Clear!</h3>
+          <p>No orders in the ${state.kdsFilter === "all" ? "active" : state.kdsFilter} queue right now.</p>
+        </div>
+      `;
+      return;
+    }
+
+    el.kdsTicketsGrid.innerHTML = filtered.map((ord) => {
+      const status = (ord.status || "pending").toLowerCase();
+      const tableInfo = ord.diningMode === "dinein" ? (ord.tableNumber || "Dine-in") : "🥡 Takeaway";
+      const custName = ord.customer?.name || "Guest";
+      const notesHtml = ord.notes ? `<div class="ticket-notes"><span>⚠️ Note:</span> <strong>${escapeHtml(ord.notes)}</strong></div>` : "";
+
+      let bumpBtn = "";
+      if (status === "pending") {
+        bumpBtn = `<button class="btn-bump btn-bump-start" data-action="bump-order" data-id="${ord.orderId}" data-next="cooking">🔥 Start Cooking</button>`;
+      } else if (status === "cooking") {
+        bumpBtn = `<button class="btn-bump btn-bump-ready" data-action="bump-order" data-id="${ord.orderId}" data-next="ready">✅ Mark Ready</button>`;
+      } else if (status === "ready") {
+        bumpBtn = `<button class="btn-bump btn-bump-complete" data-action="bump-order" data-id="${ord.orderId}" data-next="completed">🍽️ Served & Complete</button>`;
+      }
+
+      const itemsHtml = (ord.items || []).map((it) => `
+        <div class="ticket-item-row">
+          <span class="ticket-item-qty">${it.quantity}x</span>
+          <span class="ticket-item-name">${escapeHtml(it.name || (it.menuItem ? it.menuItem.name : "Dish"))}</span>
+        </div>
+      `).join("");
+
+      return `
+        <div class="kds-ticket ticket-${status}">
+          <div class="ticket-head">
+            <span class="ticket-id">Order #${ord.orderId}</span>
+            <span class="badge badge-${status === "ready" ? "success" : status === "cooking" ? "confirmed" : "pending"}">${status.toUpperCase()}</span>
+          </div>
+          <div class="ticket-meta">
+            <span>${escapeHtml(tableInfo)} • ${escapeHtml(custName)}</span>
+            <span class="ticket-timer">${ord.timestamp ? (ord.timestamp.split(" ")[1] || ord.timestamp) : "Just now"}</span>
+          </div>
+          <div class="ticket-items-list">
+            ${itemsHtml}
+          </div>
+          ${notesHtml}
+          <div class="ticket-footer">
+            ${bumpBtn}
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  // --- Customer Self-Ordering Kiosk Logic ---
+  function renderKiosk() {
+    if (!el.kioskMenuGrid) return;
+
+    const filtered = state.menuItems.filter((item) => {
+      if (!item) return false;
+      const cat = getItemCategory(item);
+      return state.kioskCategory === "all" || cat === state.kioskCategory;
+    });
+
+    el.kioskMenuGrid.innerHTML = filtered.map((item) => {
+      const cat = getItemCategory(item);
+      const icon = item.icon || (cat === "drinks" ? "🥤" : cat === "desserts" ? "🍨" : "🍲");
+      return `
+        <div class="kiosk-card">
+          <div>
+            <div class="kiosk-card-icon">${icon}</div>
+            <div class="kiosk-card-title">${escapeHtml(item.name)}</div>
+            <div class="kiosk-card-price">${formatMoney(item.price)}</div>
+          </div>
+          <button class="kiosk-card-add-btn" data-action="kiosk-add" data-id="${item.id}">+ Add to Tray</button>
+        </div>
+      `;
+    }).join("");
+
+    renderKioskTray();
+  }
+
+  function renderKioskTray() {
+    if (!el.kioskTrayList || !el.kioskEmptyTray) return;
+
+    if (state.kioskTray.length === 0) {
+      el.kioskEmptyTray.style.display = "block";
+      el.kioskTrayList.style.display = "none";
+      if (el.btnKioskSend) el.btnKioskSend.disabled = true;
+      if (el.kioskSubtotal) el.kioskSubtotal.textContent = formatMoney(0);
+      if (el.kioskTax) el.kioskTax.textContent = formatMoney(0);
+      if (el.kioskTotal) el.kioskTotal.textContent = formatMoney(0);
+      if (el.kioskSendAmount) el.kioskSendAmount.textContent = formatMoney(0);
+      if (el.kioskTrayCount) el.kioskTrayCount.textContent = "0 items";
+      return;
+    }
+
+    el.kioskEmptyTray.style.display = "none";
+    el.kioskTrayList.style.display = "flex";
+    if (el.btnKioskSend) el.btnKioskSend.disabled = false;
+
+    const totalQty = state.kioskTray.reduce((acc, r) => acc + r.quantity, 0);
+    const subtotal = state.kioskTray.reduce((acc, r) => acc + r.menuItem.price * r.quantity, 0);
+    const tax = subtotal * 0.07;
+    const total = subtotal + tax;
+
+    if (el.kioskTrayCount) el.kioskTrayCount.textContent = `${totalQty} ${totalQty === 1 ? "item" : "items"}`;
+    if (el.kioskSubtotal) el.kioskSubtotal.textContent = formatMoney(subtotal);
+    if (el.kioskTax) el.kioskTax.textContent = formatMoney(tax);
+    if (el.kioskTotal) el.kioskTotal.textContent = formatMoney(total);
+    if (el.kioskSendAmount) el.kioskSendAmount.textContent = `${formatMoney(total)} →`;
+
+    el.kioskTrayList.innerHTML = state.kioskTray.map((row) => `
+      <div class="cart-item">
+        <div class="cart-item-info">
+          <div class="cart-item-title">${escapeHtml(row.menuItem.name)}</div>
+          <div class="cart-item-price">${formatMoney(row.menuItem.price)} each</div>
+        </div>
+        <div class="cart-item-actions">
+          <button class="cart-qty-btn" data-action="kiosk-dec" data-id="${row.menuItem.id}">-</button>
+          <span class="cart-item-qty">${row.quantity}</span>
+          <button class="cart-qty-btn" data-action="kiosk-inc" data-id="${row.menuItem.id}">+</button>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  async function sendKioskOrder() {
+    if (state.kioskTray.length === 0) return;
+
+    const diningMode = el.kioskDiningMode ? el.kioskDiningMode.value : "dinein";
+    const tableNumber = diningMode === "dinein" && el.kioskTableSelect ? el.kioskTableSelect.value : "Takeaway";
+    const guestName = (el.kioskGuestName && el.kioskGuestName.value.trim()) || "Guest (Kiosk)";
+    const notes = (el.kioskOrderNotes && el.kioskOrderNotes.value.trim()) || "";
+
+    const payload = {
+      customerName: guestName,
+      diningMode: diningMode,
+      tableNumber: tableNumber,
+      notes: notes,
+      items: state.kioskTray.map((r) => ({ id: r.menuItem.id, quantity: r.quantity })),
+      payment: { method: "counter" },
+      status: "pending"
+    };
+
+    try {
+      const res = await fetch("/api/orders/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        state.kioskTray = [];
+        if (el.kioskOrderNotes) el.kioskOrderNotes.value = "";
+        renderKioskTray();
+        showToast(`🎉 Order #${data.orderId} sent to Kitchen!`);
+        renderKds();
+        renderStatsAndHistory();
+      } else {
+        const err = await res.json();
+        showToast(`Failed: ${err.error || "Could not place order"}`);
+      }
+    } catch (e) {
+      // Offline fallback
+      const mockId = state.orderSequence++;
+      const subtotal = state.kioskTray.reduce((acc, r) => acc + r.menuItem.price * r.quantity, 0);
+      const tax = subtotal * 0.07;
+      const total = subtotal + tax;
+
+      const mockOrder = {
+        orderId: mockId,
+        customer: { name: guestName },
+        diningMode: diningMode,
+        tableNumber: tableNumber,
+        notes: notes,
+        items: state.kioskTray.map((r) => ({ id: r.menuItem.id, name: r.menuItem.name, price: r.menuItem.price, quantity: r.quantity })),
+        total: total,
+        status: "pending",
+        timestamp: new Date().toLocaleTimeString()
+      };
+      state.ordersHistory.unshift(mockOrder);
+      state.kioskTray = [];
+      if (el.kioskOrderNotes) el.kioskOrderNotes.value = "";
+      renderKioskTray();
+      showToast(`🎉 Order #${mockId} sent to Kitchen!`);
+      renderKds();
+      renderStatsAndHistory();
     }
   }
 
@@ -921,6 +1257,8 @@
     // Navigation Views Mapping
     const views = {
       pos: { el: el.viewPos, title: "Order Terminal", display: "grid" },
+      kds: { el: el.viewKds, title: "Kitchen Display System (KDS)", display: "block", onOpen: renderKds },
+      "customer-kiosk": { el: el.viewCustomerKiosk, title: "Customer Self-Ordering Kiosk", display: "block", onOpen: renderKiosk },
       history: { el: el.viewHistory, title: "Order History & Audit", display: "block" },
       tables: { el: el.viewTables, title: "Restaurant Table Map", display: "block", onOpen: renderTables },
       "menu-mgmt": { el: el.viewMenuMgmt, title: "Menu Catalog Manager", display: "block", onOpen: renderMenuMgmt },
@@ -945,6 +1283,13 @@
       });
     }
 
+    // Role Switcher Buttons
+    document.querySelectorAll(".role-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        setRole(btn.dataset.role);
+      });
+    });
+
     document.querySelectorAll(".nav-link").forEach((link) => {
       link.addEventListener("click", () => switchView(link.dataset.view));
     });
@@ -956,6 +1301,120 @@
     const btnViewHistory = document.getElementById("btn-view-history");
     if (btnViewHistory) {
       btnViewHistory.addEventListener("click", () => switchView("history"));
+    }
+
+    // KDS Filter Pills
+    document.querySelectorAll(".kds-pill").forEach((pill) => {
+      pill.addEventListener("click", () => {
+        document.querySelectorAll(".kds-pill").forEach((p) => p.classList.remove("active"));
+        pill.classList.add("active");
+        state.kdsFilter = pill.dataset.kdsFilter || "all";
+        renderKds();
+      });
+    });
+
+    if (el.btnRefreshKds) {
+      el.btnRefreshKds.addEventListener("click", () => {
+        renderKds();
+        showToast("Kitchen tickets refreshed");
+      });
+    }
+
+    // KDS Bumping Action
+    if (el.kdsTicketsGrid) {
+      el.kdsTicketsGrid.addEventListener("click", async (e) => {
+        const btn = e.target.closest("[data-action='bump-order']");
+        if (!btn) return;
+        const orderId = parseInt(btn.dataset.id, 10);
+        const nextStatus = btn.dataset.next;
+
+        const ord = state.ordersHistory.find((o) => o.orderId === orderId);
+        if (ord) ord.status = nextStatus;
+
+        renderKds();
+        renderStatsAndHistory();
+
+        try {
+          await fetch("/api/orders/status", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ orderId, status: nextStatus })
+          });
+          showToast(`Order #${orderId} marked as ${nextStatus.toUpperCase()}`);
+        } catch (err) {}
+      });
+    }
+
+    // Customer Kiosk Category Filter
+    if (el.kioskCategoryPills) {
+      el.kioskCategoryPills.addEventListener("click", (e) => {
+        const pill = e.target.closest(".category-pill");
+        if (!pill) return;
+        document.querySelectorAll("#kiosk-category-pills .category-pill").forEach((p) => p.classList.remove("active"));
+        pill.classList.add("active");
+        state.kioskCategory = pill.dataset.cat || "all";
+        renderKiosk();
+      });
+    }
+
+    // Customer Kiosk Dining Mode Toggle
+    if (el.kioskDiningMode) {
+      el.kioskDiningMode.addEventListener("change", (e) => {
+        const isDinein = e.target.value === "dinein";
+        const tblSelect = document.getElementById("kiosk-table-select");
+        const tblLabel = document.getElementById("kiosk-table-label");
+        if (tblSelect) tblSelect.style.display = isDinein ? "inline-block" : "none";
+        if (tblLabel) tblLabel.style.display = isDinein ? "inline-block" : "none";
+      });
+    }
+
+    // Customer Kiosk Add Item to Tray
+    if (el.kioskMenuGrid) {
+      el.kioskMenuGrid.addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-action='kiosk-add']");
+        if (!btn) return;
+        const itemId = parseInt(btn.dataset.id, 10);
+        const item = state.menuItems.find((m) => m.id === itemId);
+        if (!item) return;
+
+        const found = state.kioskTray.find((r) => r.menuItem.id === itemId);
+        if (found) {
+          found.quantity += 1;
+        } else {
+          state.kioskTray.push({ menuItem: item, quantity: 1 });
+        }
+        renderKioskTray();
+        showToast(`Added ${item.name} to tray`);
+      });
+    }
+
+    // Customer Kiosk Tray Quantity Controls
+    if (el.kioskTrayList) {
+      el.kioskTrayList.addEventListener("click", (e) => {
+        const incBtn = e.target.closest("[data-action='kiosk-inc']");
+        const decBtn = e.target.closest("[data-action='kiosk-dec']");
+        if (incBtn) {
+          const id = parseInt(incBtn.dataset.id, 10);
+          const found = state.kioskTray.find((r) => r.menuItem.id === id);
+          if (found) found.quantity += 1;
+          renderKioskTray();
+        } else if (decBtn) {
+          const id = parseInt(decBtn.dataset.id, 10);
+          const idx = state.kioskTray.findIndex((r) => r.menuItem.id === id);
+          if (idx !== -1) {
+            state.kioskTray[idx].quantity -= 1;
+            if (state.kioskTray[idx].quantity <= 0) {
+              state.kioskTray.splice(idx, 1);
+            }
+          }
+          renderKioskTray();
+        }
+      });
+    }
+
+    // Customer Kiosk Send Order
+    if (el.btnKioskSend) {
+      el.btnKioskSend.addEventListener("click", sendKioskOrder);
     }
 
     // Table Status Toggle Handler
@@ -994,6 +1453,7 @@
         state.menuItems = state.menuItems.filter((m) => m.id !== dishId);
         renderMenu();
         renderMenuMgmt();
+        renderKiosk();
         showToast("Dish removed from catalog");
         try {
           await fetch(`/api/menu/${dishId}`, { method: "DELETE" });
@@ -1055,8 +1515,12 @@
     renderTables();
     renderMenuMgmt();
     renderReports();
+    renderKds();
+    renderKiosk();
     setupEventListeners();
+    setRole("cashier"); // default initial role
     await syncFromBackend();
+    renderKds();
   }
 
   // Run on DOM ready
