@@ -49,14 +49,14 @@ flowchart LR
     Manager --> UC11
     Manager --> UC12
 
-    UC3 -.->|<<include>>| UC4
-    UC7 -.->|<<include>>| UC5
-    UC7 -.->|<<include>>| UC6
-    UC7 -.->|<<include>>| UC8
-    UC6 <|-- UC6_Cash
-    UC6 <|-- UC6_Card
-    UC6 <|-- UC6_QR
-    UC9 -.->|<<extend>>| UC7
+    UC3 -.->|includes| UC4
+    UC7 -.->|includes| UC5
+    UC7 -.->|includes| UC6
+    UC7 -.->|includes| UC8
+    UC6 --> UC6_Cash
+    UC6 --> UC6_Card
+    UC6 --> UC6_QR
+    UC9 -.->|extends| UC7
 ```
 
 ---
@@ -171,7 +171,7 @@ classDiagram
         <<abstract>>
         #float _amount
         +amount: float
-        +pay()* bool
+        +pay() bool
     }
 
     class CashPayment {
@@ -238,11 +238,11 @@ sequenceDiagram
     Cashier->>UI: Select Dining Mode (Dine-in Table T-01)
     Cashier->>UI: Select Items (2x Fried Rice, 1x Iced Tea)
     UI->>UI: Calculate Live Subtotal (฿145.00) + 7% VAT (฿10.15) = ฿155.15
-    Cashier->>UI: Click "Checkout"
+    Cashier->>UI: Click Checkout
     UI-->>Cashier: Display Payment Dialog (Cash Tab)
     Cashier->>UI: Enter Received Cash (฿200.00)
     UI->>UI: Display Change (฿44.85)
-    Cashier->>UI: Click "Confirm & Pay"
+    Cashier->>UI: Click Confirm and Pay
 
     UI->>Server: POST /api/orders/checkout
     Server->>Rest: createOrder(customer)
@@ -257,12 +257,12 @@ sequenceDiagram
 
     Server->>Ord: checkout() -> State: CONFIRMED
     Server->>Ord: complete() -> State: COMPLETED
-    Server->>DB: add_order(order_payload) & occupy table T-01
+    Server->>DB: add_order(order_payload) and occupy table T-01
     DB-->>Server: Saved to pos_database.json
-    Server-->>UI: 200 OK {success: true, order}
+    Server-->>UI: 200 OK (order completed)
 
-    UI-->>Cashier: Display "Payment Successful" & 80mm Receipt
-    Cashier->>UI: Click "🖨️ Print Receipt"
+    UI-->>Cashier: Display Payment Successful and 80mm Receipt
+    Cashier->>UI: Click Print Receipt
     UI-->>Cashier: Send 80mm Thermal Slip to Printer
 ```
 
@@ -278,23 +278,23 @@ sequenceDiagram
     actor Cashier
     participant UI as POS Terminal (Web)
     participant Server as HTTP Server (server.py)
+    participant Rest as Restaurant
     participant Ord as Order
     participant Pay as CreditCardPayment
 
     Cashier->>UI: Click Checkout (Total: ฿155.15)
-    Cashier->>UI: Select Credit Card Tab & Enter Invalid Card Number
-    Cashier->>UI: Click "Confirm & Pay"
+    Cashier->>UI: Select Credit Card Tab and Enter Invalid Card Number
+    Cashier->>UI: Click Confirm and Pay
 
     UI->>Server: POST /api/orders/checkout
-    Server->>Ord: createOrder(customer)
+    Server->>Rest: createOrder(customer)
     Server->>Ord: addItem(menuItem, quantity)
-    Server->>Pay: CreditCardPayment(155.15, "1234").pay()
+    Server->>Pay: CreditCardPayment(155.15, invalidCard).pay()
     Pay-->>Server: False (Invalid card length != 16)
 
     Server->>Ord: cancel() -> State: CANCELLED
-    Server-->>UI: 400 Bad Request {error: "Payment failed", status: "cancelled"}
-    UI-->>Cashier: Show Warning Banner "Payment Failed: Invalid Card"
-    Note over Cashier, UI: Order remains unlocked or cancelled; cashier can re-try
+    Server-->>UI: 400 Bad Request (Payment failed - Order cancelled)
+    UI-->>Cashier: Show Warning Banner: Payment Failed
 ```
 
 ---
@@ -311,17 +311,17 @@ sequenceDiagram
     participant Server as HTTP Server
     participant DB as POSStorage
 
-    Waiter->>UI: Open "Table Map" Tab
+    Waiter->>UI: Open Table Map Tab
     UI->>Server: GET /api/tables
-    Server->>DB: load_all()["tables"]
+    Server->>DB: load_all() tables
     DB-->>Server: Return 7 tables with occupancy status
-    Server-->>UI: 200 OK [ {tableId: "T-01", status: "available"}, ... ]
+    Server-->>UI: 200 OK with table list
     UI-->>Waiter: Render Visual Color-Coded Table Floor Plan
 
-    Waiter->>UI: Click "Seat Guests" on Table T-03
-    UI->>Server: POST /api/tables/status {tableId: "T-03", status: "occupied"}
-    Server->>DB: Update table status to "occupied"
-    DB-->>Server: Persisted
-    Server-->>UI: 200 OK {success: true, tableId: "T-03", status: "occupied"}
-    UI-->>Waiter: Card switches to 🔴 OCCUPIED with Toast feedback
+    Waiter->>UI: Click Seat Guests on Table T-03
+    UI->>Server: POST /api/tables/status (tableId: T-03, status: occupied)
+    Server->>DB: Update table status to occupied
+    DB-->>Server: Persisted to database
+    Server-->>UI: 200 OK (status updated)
+    UI-->>Waiter: Card switches to OCCUPIED with Toast feedback
 ```
