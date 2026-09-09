@@ -3,7 +3,7 @@
 A modern, specification-driven Point of Sale (POS) and restaurant management platform built with Python and vanilla modern web technologies. Designed for speed, touch ergonomics, and operational resilience.
 
 [![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://www.python.org/)
-[![Tests](https://img.shields.io/badge/Tests-40%20Passed-brightgreen.svg)](#-running-automated-tests)
+[![Tests](https://img.shields.io/badge/Tests-43%20Passed-brightgreen.svg)](#-running-automated-tests)
 [![Architecture](https://img.shields.io/badge/Architecture-Specification--Driven-orange.svg)](SPECIFICATION.md)
 [![License](https://img.shields.io/badge/License-MIT-lightgrey.svg)](#)
 
@@ -17,6 +17,7 @@ A modern, specification-driven Point of Sale (POS) and restaurant management pla
 - [Modules & Capabilities](#-modules--capabilities)
 - [REST API Reference](#-rest-api-reference)
 - [Running Automated Tests](#-running-automated-tests)
+- [Consolidated Master Documentation](#-consolidated-master-documentation)
 - [Specification Documents](#-specification-documents)
 
 ---
@@ -179,7 +180,8 @@ python3 main.py
 | `GET` | `/api/customers` | List registered customer profiles |
 | `POST` | `/api/customers` | Register a new customer (`{name, phone}`) |
 | `GET` | `/api/orders` | Retrieve full audit log of orders |
-| `POST` | `/api/orders/checkout` | Process order checkout and payment |
+| `POST` | `/api/orders/checkout` | Process order checkout and payment (`{customerName, items, payment, status, notes}`) |
+| `POST` | `/api/orders/status` | Advance KDS ticket lifecycle (`{orderId, status}`) |
 | `GET` | `/api/reports/summary` | Retrieve sales analytics and bestsellers |
 
 *For complete request/response schemas and examples, see [`docs/API_DOCUMENTATION.md`](docs/API_DOCUMENTATION.md).*
@@ -188,7 +190,7 @@ python3 main.py
 
 ## 🧪 Running Automated Tests
 
-The system includes 40 automated specification tests verifying state machines, payment algorithms, domain invariants, and API contracts.
+The system includes **43 automated specification tests** verifying state machines, payment algorithms, domain invariants, API contracts, and multi-role operations.
 
 Run the full test suite with standard library `unittest`:
 ```bash
@@ -197,17 +199,27 @@ python3 -m unittest discover -s tests -p "test_*.py" -v
 
 ### Test Output:
 ```text
-Ran 40 tests in 1.240s
+Ran 43 tests in 1.255s
 
 OK
 ```
 
 ---
 
+## 📘 Consolidated Master Documentation
+
+For a complete, unified reference combining architecture, visual UML models, multi-role operations, API specs, and verification matrices in a single file:
+
+👉 **[📖 Master System Documentation (SYSTEM_DOCUMENTATION.md)](docs/SYSTEM_DOCUMENTATION.md)**
+
+---
+
 ## 📚 Specification Documents
 
+- 📘 **[Master System Documentation](docs/SYSTEM_DOCUMENTATION.md)**: Consolidated comprehensive guide.
+- 📐 **[Visual UML Diagrams](diagrams.md)**: Use case, class, and sequence diagrams.
 - 📄 **[Domain & System Specification](SPECIFICATION.md)**: Class diagrams, state invariants, and BDD scenarios.
 - 📄 **[Frontend UI Specification](FRONTEND_SPECIFICATION.md)**: Component hierarchy, touch interaction rules, and state machine.
 - 📄 **[Architecture Deep-Dive](docs/ARCHITECTURE.md)**: Domain-driven design and structural patterns.
 - 📄 **[API Documentation](docs/API_DOCUMENTATION.md)**: Complete REST API guide.
-- 📄 **[User & Staff Guide](docs/USER_GUIDE.md)**: Cashier operating manual.
+- 📄 **[User & Staff Guide](docs/USER_GUIDE.md)**: Multi-role operating manual (Cashier, Kitchen KDS, Manager, Kiosk).

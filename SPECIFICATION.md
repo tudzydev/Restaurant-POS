@@ -202,7 +202,8 @@ stateDiagram-v2
 | `/api/customers` | `GET` | None | `list[Customer]` | Returns registered customer profiles. |
 | `/api/customers` | `POST` | `{name, phone}` | `Customer` (201) | Registers customer profile. |
 | `/api/orders` | `GET` | None | `list[Order]` | Returns full audit log of all orders. |
-| `/api/orders/checkout` | `POST` | `{customerName, items, payment, diningMode, tableNumber}` | `{success, order}` (200) | Validates total, processes payment, persists order. |
+| `/api/orders/checkout` | `POST` | `{customerName, items, payment, diningMode, tableNumber, notes, status}` | `{success, order}` (200) | Validates total, processes payment, persists order. |
+| `/api/orders/status` | `POST` | `{orderId, status}` | `{success, orderId, status}` (200) | Updates order lifecycle status (pending, cooking, ready, completed). |
 | `/api/reports/summary` | `GET` | None | `{totalOrders, completedOrders, totalRevenue, popularItems}` | Real-time analytics report. |
 
 ---
@@ -223,21 +224,22 @@ sequenceDiagram
     UI->>Cashier: Display Payment Dialog (Cash/Card/QR)
     Cashier->>UI: Enter Payment Tender
     UI->>API: POST /api/orders/checkout
-    API->>API: Calculate Total + 7% VAT & Process Payment
-    API->>DB: Save Order & Update Table Occupancy
-    API-->>UI: 200 OK {success: true, order}
+    API->>API: Calculate Total + 7% VAT and Process Payment
+    API->>DB: Save Order and Update Table Occupancy
+    API-->>UI: 200 OK (order confirmed)
     UI->>Cashier: Render Printable 80mm Receipt
-    UI->>UI: Refresh Tables & Sales Analytics
+    UI->>UI: Refresh Tables and Sales Analytics
 ```
 
 ---
 
-## 7. Automated Test Suite (40 Specification Tests)
+## 7. Automated Test Suite (43 Specification Tests)
 
-All 40 acceptance criteria are validated automatically with `python3 -m unittest discover -s tests`:
+All 43 acceptance criteria are validated automatically with `python3 -m unittest discover -s tests`:
 - [`tests/test_menu_spec.py`](file:///Users/mac/Desktop/workspace/Restaurant-POS/tests/test_menu_spec.py): Menu addition, removal, and lookup specs.
 - [`tests/test_order_spec.py`](file:///Users/mac/Desktop/workspace/Restaurant-POS/tests/test_order_spec.py): Order calculation, mutation guards, and state machine invariants.
 - [`tests/test_payment_spec.py`](file:///Users/mac/Desktop/workspace/Restaurant-POS/tests/test_payment_spec.py): Cash, Card, and QR payment contracts.
 - [`tests/test_e2e_flow_spec.py`](file:///Users/mac/Desktop/workspace/Restaurant-POS/tests/test_e2e_flow_spec.py): End-to-end integration workflows.
 - [`tests/test_full_system_spec.py`](file:///Users/mac/Desktop/workspace/Restaurant-POS/tests/test_full_system_spec.py): Table allocation, persistence, menu CRUD, and report analytics.
 - [`tests/test_server_spec.py`](file:///Users/mac/Desktop/workspace/Restaurant-POS/tests/test_server_spec.py): REST API contracts.
+- [`tests/test_role_coverage_spec.py`](file:///Users/mac/Desktop/workspace/Restaurant-POS/tests/test_role_coverage_spec.py): Multi-role workflow coverage (Cashier, Kitchen KDS, Customer Kiosk, Manager).

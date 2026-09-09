@@ -152,6 +152,7 @@ Processes a complete customer order, validates pricing, calculates 7% VAT, valid
 - **Status Codes**:
   - `200 OK`: Payment successful, order completed and recorded.
   - `400 Bad Request`: Empty order, insufficient funds, or invalid card number.
+- **Notes**: Supports `payment: {"method": "counter"}` and custom `status: "pending"` for customer self-ordering kiosks and dine-in pre-orders.
 - **Response**:
 ```json
 {
@@ -167,6 +168,7 @@ Processes a complete customer order, validates pricing, calculates 7% VAT, valid
     },
     "diningMode": "dinein",
     "tableNumber": "T-01",
+    "notes": "Extra crispy, no chili",
     "items": [
       {
         "id": 1,
@@ -195,7 +197,66 @@ Processes a complete customer order, validates pricing, calculates 7% VAT, valid
 
 ---
 
-## 4. Reports & Analytics
+### `POST /api/orders/status`
+Kitchen Display System (KDS) endpoint to transition an order ticket through its preparation lifecycle.
+
+- **Headers**: `Content-Type: application/json`
+- **Request Body**:
+```json
+{
+  "orderId": 101,
+  "status": "cooking"
+}
+```
+- **Allowed Statuses**:
+  - `"pending"`: Order placed, awaiting kitchen pick-up.
+  - `"cooking"`: Station chef active prep.
+  - `"ready"`: Plated and ready to be served to table or pickup counter.
+  - `"completed"`: Order served and fulfilled.
+  - `"cancelled"`: Order voided.
+- **Status Codes**:
+  - `200 OK`: Status successfully updated.
+  - `404 Not Found`: Order ID not found.
+- **Response**:
+```json
+{
+  "success": true,
+  "orderId": 101,
+  "status": "cooking"
+}
+```
+
+---
+
+## 4. Table Floor Management
+
+### `POST /api/tables/status`
+Updates occupancy status of a restaurant floor table.
+
+- **Headers**: `Content-Type: application/json`
+- **Request Body**:
+```json
+{
+  "tableId": "T-03",
+  "status": "occupied"
+}
+```
+- **Allowed Statuses**: `"available"`, `"occupied"`, `"reserved"`
+- **Status Codes**:
+  - `200 OK`: Table status successfully updated and persisted.
+  - `404 Not Found`: Table ID does not exist.
+- **Response**:
+```json
+{
+  "success": true,
+  "tableId": "T-03",
+  "status": "occupied"
+}
+```
+
+---
+
+## 5. Reports & Analytics
 
 ### `GET /api/reports/summary`
 Returns real-time aggregated sales metrics.

@@ -349,6 +349,31 @@
       "status": "completed",
       "paymentMethod": "Cash",
       "timestamp": "2026-09-09 14:46:55"
+    },
+    {
+      "orderId": 111,
+      "customer": {
+        "name": "Nong Somchai",
+        "phone": "081-999-8888"
+      },
+      "diningMode": "dinein",
+      "tableNumber": "T-01",
+      "notes": "",
+      "items": [
+        {
+          "id": 1,
+          "name": "Fried Rice (ข้าวผัด)",
+          "price": 60.0,
+          "quantity": 2,
+          "subtotal": 120.0
+        }
+      ],
+      "subtotal": 120.0,
+      "tax": 8.4,
+      "total": 128.4,
+      "status": "completed",
+      "paymentMethod": "Cash",
+      "timestamp": "2026-09-09 14:50:13"
     }
   ],
   "customers": [
@@ -368,5 +393,5 @@
       "phone": "089-765-4321"
     }
   ],
-  "next_order_id": 111
+  "next_order_id": 112
 }
