@@ -1,8 +1,9 @@
 class MenuItem:
-    def __init__(self, id: int, name: str, price: float):
+    def __init__(self, id: int, name: str, price: float, category: str = "mains"):
         self.__id = id
         self.__name = name
         self.__price = price
+        self.__category = category
 
     @property
     def id(self) -> int:
@@ -15,6 +16,10 @@ class MenuItem:
     @property
     def price(self) -> float:
         return self.__price
+
+    @property
+    def category(self) -> str:
+        return self.__category
         
     def getPrice(self) -> float:
         return self.__price

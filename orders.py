@@ -40,10 +40,14 @@ class Order:
         return self.__orderStatus
 
     def addItem(self, menuItem: MenuItem, quantity: int) -> None:
+        if self.__orderStatus != OrderStatus.PENDING:
+            raise ValueError("Cannot add items to an order that is not pending")
         item = OrderItem(menuItem, quantity)
         self.__items.append(item)
 
     def removeItem(self, itemId: int) -> None:
+        if self.__orderStatus != OrderStatus.PENDING:
+            raise ValueError("Cannot remove items from an order that is not pending")
         self.__items = [
             item for item in self.__items
             if item.menu_item.id != itemId

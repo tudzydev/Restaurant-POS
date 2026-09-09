@@ -3,71 +3,464 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TableOne POS</title>
+    <title>Restaurant POS | TableOne</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <div class="app-shell">
+      <!-- Left Sidebar Navigation -->
       <aside class="sidebar">
         <a class="brand" href="#">
-          <span class="brand-mark">T</span><span>table<span>one</span></span>
+          <span class="brand-mark">🍽️</span>
+          <span>Table<span>One</span></span>
         </a>
+
         <nav aria-label="Primary navigation">
-          <a class="nav-link active" data-nav="Orders" href="#orders"><span>▦</span> Orders</a>
-          <a class="nav-link" data-nav="Menu" href="#menu"><span>☷</span> Menu</a>
-          <a class="nav-link" data-nav="Tables" href="#tables"><span>▤</span> Tables</a>
-          <a class="nav-link" data-nav="Customers" href="#customers"><span>♙</span> Customers</a>
-          <a class="nav-link" data-nav="Reports" href="#reports"><span>▥</span> Reports</a>
+          <button class="nav-link active" data-view="pos">
+            <span class="nav-icon">▦</span>
+            <span>Point of Sale</span>
+          </button>
+          <button class="nav-link" data-view="history">
+            <span class="nav-icon">☷</span>
+            <span>Order History</span>
+          </button>
+          <button class="nav-link" data-view="menu-mgmt">
+            <span class="nav-icon">🍴</span>
+            <span>Menu Catalog</span>
+          </button>
         </nav>
+
         <div class="sidebar-bottom">
-          <a class="nav-link" data-nav="Settings" href="#settings"><span>⚙</span> Settings</a>
-          <div class="profile"><div class="avatar">AM</div><div><strong>Alex Morgan</strong><small>Manager</small></div><button aria-label="Profile options">•••</button></div>
+          <div class="connection-status">
+            <span class="status-dot online"></span>
+            <span id="backend-status">Ready (Local Engine)</span>
+          </div>
+          <div class="profile">
+            <div class="avatar">SC</div>
+            <div class="profile-info">
+              <strong>Somchai Cashier</strong>
+              <small>Terminal #01</small>
+            </div>
+          </div>
         </div>
       </aside>
 
-      <main>
+      <!-- Main Workspace -->
+      <main class="main-content">
+        <!-- Top Bar -->
         <header class="topbar">
-          <div><p class="eyebrow">Tuesday, October 24</p><h1>Create order</h1></div>
-          <div class="topbar-actions"><button class="icon-button" aria-label="Notifications">♧<i></i></button><button class="help-button">? <span>Help center</span></button></div>
+          <div>
+            <p class="eyebrow" id="current-date">Today</p>
+            <h1 id="page-title">Order Terminal</h1>
+          </div>
+          <div class="topbar-actions">
+            <div class="active-badge">Order #<span id="header-order-id">101</span></div>
+            <button class="action-pill-button" id="btn-view-history">
+              📜 History (<span id="history-count">0</span>)
+            </button>
+          </div>
         </header>
 
+        <!-- Stats Bar -->
         <section class="stats" aria-label="Today's statistics">
-          <article><span class="stat-icon revenue">$</span><div><small>Today's sales</small><strong>$1,284.50</strong><em>↗ 12.5% <span>vs. yesterday</span></em></div></article>
-          <article><span class="stat-icon orders">▤</span><div><small>Orders today</small><strong>48</strong><em>↗ 8.2% <span>vs. yesterday</span></em></div></article>
-          <article><span class="stat-icon tables">♧</span><div><small>Open tables</small><strong>6 <span>/ 18</span></strong><em class="neutral">2 awaiting payment</em></div></article>
+          <article class="stat-card">
+            <span class="stat-icon revenue">฿</span>
+            <div>
+              <small>Today's Sales</small>
+              <strong id="stat-revenue">฿0.00</strong>
+            </div>
+          </article>
+          <article class="stat-card">
+            <span class="stat-icon orders">📦</span>
+            <div>
+              <small>Completed Orders</small>
+              <strong id="stat-orders">0</strong>
+            </div>
+          </article>
+          <article class="stat-card">
+            <span class="stat-icon customer">👥</span>
+            <div>
+              <small>Current Customer</small>
+              <strong id="stat-customer-name">Walk-in Guest</strong>
+            </div>
+          </article>
         </section>
 
-        <section class="workspace" id="orders">
+        <!-- POS Workspace View -->
+        <section class="workspace" id="view-pos">
+          <!-- Left: Menu Pane -->
           <div class="menu-pane">
-            <div class="section-heading"><div><h2>Menu</h2><p>Add items to the current order</p></div><button class="secondary-button" id="manage-menu">⌘&nbsp; Manage menu</button></div>
-            <label class="search"><span>⌕</span><input id="search" type="search" placeholder="Search menu items…" autocomplete="off" /><kbd>⌘ K</kbd></label>
-            <div class="categories" id="categories" aria-label="Menu categories"></div>
+            <div class="section-heading">
+              <div>
+                <h2>Menu Items</h2>
+                <p>Click item to add to active order</p>
+              </div>
+              <button class="secondary-button" id="btn-add-custom-item">+ New Item</button>
+            </div>
+
+            <!-- Search & Filters -->
+            <div class="menu-controls">
+              <label class="search-box">
+                <span class="search-icon">🔍</span>
+                <input id="search-input" type="search" placeholder="Search dish or beverage... (Press '/' to focus)" autocomplete="off" />
+                <button type="button" class="btn-clear-search" id="btn-clear-search" title="Clear search" style="display:none;">&times;</button>
+              </label>
+              <div class="keyboard-hints">
+                <span class="kbd-badge"><kbd>/</kbd> Find</span>
+                <span class="kbd-badge"><kbd>Esc</kbd> Close</span>
+              </div>
+            </div>
+
+            <div class="categories" id="category-pills" role="tablist">
+              <button class="category-pill active" data-cat="all">All Items</button>
+              <button class="category-pill" data-cat="mains">🍜 Mains</button>
+              <button class="category-pill" data-cat="drinks">🥤 Drinks</button>
+              <button class="category-pill" data-cat="desserts">🍨 Desserts</button>
+            </div>
+
+            <!-- Menu Grid -->
             <div class="menu-grid" id="menu-grid" aria-live="polite"></div>
           </div>
 
-          <aside class="order-panel" aria-label="Current order">
-            <div class="order-head"><div><p class="eyebrow">Current order</p><h2 id="order-name">Walk-in order</h2></div><button class="more-button" id="order-options" aria-label="Order options">•••</button></div>
-            <button class="customer-button" id="add-customer"><span class="customer-icon">♙</span><span id="customer-label">Add customer</span><b>›</b></button>
-            <div class="order-divider"></div>
-            <div class="cart-title"><h3>Order items</h3><span id="item-count">0 items</span></div>
-            <div class="cart" id="cart"><div class="empty-cart"><span>⌑</span><strong>Your order is empty</strong><p>Select an item from the menu to get started.</p></div></div>
-            <div class="totals">
-              <div><span>Subtotal</span><strong id="subtotal">$0.00</strong></div>
-              <div><span>Tax <small>8%</small></span><strong id="tax">$0.00</strong></div>
-              <div class="total"><span>Total</span><strong id="total">$0.00</strong></div>
+          <!-- Right: Order / Cart Panel -->
+          <aside class="order-panel" aria-label="Current Order">
+            <div class="order-head">
+              <div>
+                <p class="eyebrow">Active Order</p>
+                <h2 id="order-label">Order #101</h2>
+              </div>
+              <span class="badge badge-pending" id="order-status-badge">PENDING</span>
             </div>
-            <div class="order-actions"><button class="destructive-button" id="clear-order">Clear order</button><button class="checkout-button" id="checkout" disabled>Checkout <span id="checkout-total">$0.00</span> →</button></div>
+
+            <!-- Dining Type Toggle -->
+            <div class="dining-mode-selector">
+              <button class="dining-mode-btn active" id="btn-mode-dinein" data-mode="dinein">
+                🍽️ Dine-in
+              </button>
+              <button class="dining-mode-btn" id="btn-mode-takeaway" data-mode="takeaway">
+                🥡 Takeaway
+              </button>
+            </div>
+
+            <!-- Table Selector (Visible when Dine-in) -->
+            <div class="table-selector-row" id="table-selector-row">
+              <label for="select-table">Table:</label>
+              <select id="select-table" class="table-dropdown">
+                <option value="T-01">Table 01 (Indoor)</option>
+                <option value="T-02">Table 02 (Indoor)</option>
+                <option value="T-03">Table 03 (Window)</option>
+                <option value="T-04">Table 04 (Window)</option>
+                <option value="T-05">Table 05 (Outdoor Garden)</option>
+                <option value="T-06">Table 06 (Outdoor Garden)</option>
+                <option value="VIP-01">VIP Room 01</option>
+              </select>
+            </div>
+
+            <!-- Customer Picker -->
+            <button class="customer-button" id="btn-select-customer">
+              <span class="customer-icon">👤</span>
+              <div class="customer-details">
+                <span class="customer-name" id="selected-customer-name">Walk-in Guest</span>
+                <small class="customer-phone" id="selected-customer-phone">Tap to change customer</small>
+              </div>
+              <b class="arrow">›</b>
+            </button>
+
+            <div class="order-divider"></div>
+
+            <div class="cart-title">
+              <h3>Cart Items</h3>
+              <span id="cart-item-count">0 items</span>
+            </div>
+
+            <!-- Cart List -->
+            <div class="cart" id="cart-container">
+              <div class="empty-cart" id="empty-cart-view">
+                <span class="empty-cart-icon">🛒</span>
+                <strong>Your order is empty</strong>
+                <p>Select items from the menu to start creating this order.</p>
+              </div>
+              <div class="cart-items-list" id="cart-items-list" style="display:none;"></div>
+            </div>
+
+            <!-- Totals Breakdown -->
+            <div class="totals">
+              <div>
+                <span>Subtotal</span>
+                <strong id="summary-subtotal">฿0.00</strong>
+              </div>
+              <div>
+                <span>Tax <small>(7% VAT)</small></span>
+                <strong id="summary-tax">฿0.00</strong>
+              </div>
+              <div class="total-row">
+                <span>Grand Total</span>
+                <strong id="summary-total">฿0.00</strong>
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="order-actions">
+              <button class="destructive-button" id="btn-clear-order" title="Clear current cart">
+                Clear
+              </button>
+              <button class="checkout-button" id="btn-checkout" disabled>
+                <span>Checkout</span>
+                <span id="btn-checkout-amount">฿0.00 →</span>
+              </button>
+            </div>
           </aside>
+        </section>
+
+        <!-- History View -->
+        <section class="workspace-history" id="view-history" style="display:none;">
+          <div class="history-panel">
+            <div class="section-heading">
+              <div>
+                <h2>Order History & Audit Log</h2>
+                <p>Track all completed and cancelled orders</p>
+              </div>
+              <button class="secondary-button" id="btn-back-to-pos">← Back to POS</button>
+            </div>
+            <div class="history-table-container">
+              <table class="history-table">
+                <thead>
+                  <tr>
+                    <th>Order #</th>
+                    <th>Time</th>
+                    <th>Customer</th>
+                    <th>Items</th>
+                    <th>Total</th>
+                    <th>Payment Method</th>
+                    <th>Status</th>
+                    <th>Receipt</th>
+                  </tr>
+                </thead>
+                <tbody id="history-table-body">
+                  <!-- Populated dynamically -->
+                </tbody>
+              </table>
+              <div class="empty-history" id="empty-history-view" style="display:none;">
+                <p>No orders processed yet today.</p>
+              </div>
+            </div>
+          </div>
         </section>
       </main>
     </div>
-    <div class="toast" id="toast" role="status"></div>
+
+    <!-- Modals -->
     <div class="modal-backdrop" id="modal-backdrop" hidden>
-      <section class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"></section>
+      <!-- Modal: Payment Dialog -->
+      <div class="modal" id="modal-payment" role="dialog" aria-modal="true" style="display:none;">
+        <div class="modal-head">
+          <div>
+            <h2>Process Payment</h2>
+            <p>Select payment method and confirm transaction</p>
+          </div>
+          <button class="close-modal" data-close="true">&times;</button>
+        </div>
+
+        <div class="payment-amount-banner">
+          <span>Amount Due:</span>
+          <strong id="payment-due-amount">฿0.00</strong>
+        </div>
+
+        <!-- Payment Method Tabs -->
+        <div class="payment-tabs" role="tablist">
+          <button class="payment-tab active" data-method="cash">
+            💵 Cash
+          </button>
+          <button class="payment-tab" data-method="card">
+            💳 Credit Card
+          </button>
+          <button class="payment-tab" data-method="qr">
+            📱 QR Code
+          </button>
+        </div>
+
+        <!-- Tab 1: Cash -->
+        <div class="payment-tab-content" id="tab-cash">
+          <label class="form-field">
+            <span>Cash Received (฿)</span>
+            <input type="number" id="cash-received-input" step="any" min="0" placeholder="0.00" />
+          </label>
+          <div class="quick-cash-buttons">
+            <button class="quick-cash" data-val="exact">Exact</button>
+            <button class="quick-cash" data-val="100">฿100</button>
+            <button class="quick-cash" data-val="500">฿500</button>
+            <button class="quick-cash" data-val="1000">฿1,000</button>
+          </div>
+          <div class="change-display">
+            <span>Change:</span>
+            <strong id="cash-change-amount">฿0.00</strong>
+          </div>
+          <p class="error-text" id="cash-error" style="display:none;">Received amount is less than amount due.</p>
+        </div>
+
+        <!-- Tab 2: Credit Card -->
+        <div class="payment-tab-content" id="tab-card" style="display:none;">
+          <label class="form-field">
+            <span>Card Number (16 digits)</span>
+            <input type="text" id="card-number-input" maxlength="19" placeholder="4532 •••• •••• 8910" />
+          </label>
+          <p class="hint-text">Simulates swipe/chip. Must contain exactly 16 numeric digits.</p>
+          <p class="error-text" id="card-error" style="display:none;">Invalid card number. Must be 16 numeric digits.</p>
+        </div>
+
+        <!-- Tab 3: QR Code -->
+        <div class="payment-tab-content" id="tab-qr" style="display:none;">
+          <div class="qr-mock-box">
+            <div class="qr-code-graphic">
+              <!-- Visual Simulated QR Code -->
+              <div class="qr-placeholder">
+                <span class="qr-icon">📱</span>
+                <p>PromptPay / QR Stand</p>
+              </div>
+            </div>
+            <label class="form-field">
+              <span>Transaction Reference / Auth Code</span>
+              <input type="text" id="qr-txn-input" placeholder="e.g. TXN-984210" />
+            </label>
+          </div>
+          <p class="error-text" id="qr-error" style="display:none;">Transaction ID cannot be empty.</p>
+        </div>
+
+        <div class="modal-actions">
+          <button class="cancel-button" data-close="true">Cancel</button>
+          <button class="primary-button" id="btn-confirm-payment">Confirm & Pay</button>
+        </div>
+      </div>
+
+      <!-- Modal: Customer Selector -->
+      <div class="modal" id="modal-customer" role="dialog" aria-modal="true" style="display:none;">
+        <div class="modal-head">
+          <div>
+            <h2>Select Customer</h2>
+            <p>Attach a customer profile to this order</p>
+          </div>
+          <button class="close-modal" data-close="true">&times;</button>
+        </div>
+
+        <div class="customer-preset-list" id="customer-presets">
+          <button class="customer-preset-card active" data-name="Walk-in Guest" data-phone="">
+            <strong>Walk-in Guest</strong>
+            <small>Standard Guest Order</small>
+          </button>
+          <button class="customer-preset-card" data-name="Somchai Prasert" data-phone="081-234-5678">
+            <strong>Somchai Prasert</strong>
+            <small>081-234-5678 (VIP)</small>
+          </button>
+          <button class="customer-preset-card" data-name="Apinya Wong" data-phone="089-765-4321">
+            <strong>Apinya Wong</strong>
+            <small>089-765-4321</small>
+          </button>
+        </div>
+
+        <div class="divider-text"><span>or enter new customer</span></div>
+
+        <div class="form-grid">
+          <label class="form-field">
+            <span>Customer Name</span>
+            <input type="text" id="custom-customer-name" placeholder="Full name" />
+          </label>
+          <label class="form-field">
+            <span>Phone Number</span>
+            <input type="tel" id="custom-customer-phone" placeholder="08x-xxx-xxxx" />
+          </label>
+        </div>
+
+        <div class="modal-actions">
+          <button class="cancel-button" data-close="true">Cancel</button>
+          <button class="primary-button" id="btn-save-customer">Set Customer</button>
+        </div>
+      </div>
+
+      <!-- Modal: Receipt -->
+      <div class="modal" id="modal-receipt" role="dialog" aria-modal="true" style="display:none;">
+        <div class="modal-head">
+          <div>
+            <h2>Payment Successful!</h2>
+            <p>Order has been processed and completed.</p>
+          </div>
+          <button class="close-modal" data-close="true">&times;</button>
+        </div>
+
+        <div class="receipt-paper" id="receipt-paper">
+          <div class="receipt-header">
+            <h3>TableOne Restaurant</h3>
+            <p>123 Gourmet Blvd, Bangkok</p>
+            <p id="receipt-timestamp"></p>
+          </div>
+          <div class="receipt-meta">
+            <div><span>Order ID:</span> <strong id="receipt-order-id">#101</strong></div>
+            <div><span>Customer:</span> <strong id="receipt-customer">Walk-in</strong></div>
+            <div><span>Dining Mode:</span> <strong id="receipt-dining-mode">Dine-in (T-01)</strong></div>
+            <div><span>Status:</span> <span class="badge badge-success">COMPLETED</span></div>
+          </div>
+          <div class="receipt-divider"></div>
+          <div class="receipt-items" id="receipt-items-list"></div>
+          <div class="receipt-divider"></div>
+          <div class="receipt-totals">
+            <div><span>Subtotal:</span> <span id="receipt-subtotal">฿0.00</span></div>
+            <div><span>VAT (7%):</span> <span id="receipt-tax">฿0.00</span></div>
+            <div class="receipt-grand-total"><span>Total Paid:</span> <strong id="receipt-total">฿0.00</strong></div>
+            <div><span>Payment Method:</span> <span id="receipt-payment-method">Cash</span></div>
+            <div id="receipt-change-row"><span>Change Given:</span> <span id="receipt-change">฿0.00</span></div>
+          </div>
+          <div class="receipt-footer">
+            <p>Thank you for dining with us!</p>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button class="secondary-button" id="btn-print-receipt">🖨️ Print Receipt</button>
+          <button class="primary-button" id="btn-new-order">Start Next Order</button>
+        </div>
+      </div>
+
+      <!-- Modal: Add Custom Menu Item -->
+      <div class="modal" id="modal-new-item" role="dialog" aria-modal="true" style="display:none;">
+        <div class="modal-head">
+          <div>
+            <h2>Add Menu Item</h2>
+            <p>Register a new item into the restaurant catalog</p>
+          </div>
+          <button class="close-modal" data-close="true">&times;</button>
+        </div>
+
+        <div class="form-grid">
+          <label class="form-field">
+            <span>Item Name</span>
+            <input type="text" id="new-item-name" placeholder="e.g. Tom Yum Kung" />
+          </label>
+          <label class="form-field">
+            <span>Price (฿)</span>
+            <input type="number" id="new-item-price" step="any" min="0" placeholder="e.g. 120.00" />
+          </label>
+          <label class="form-field">
+            <span>Category</span>
+            <select id="new-item-category">
+              <option value="mains">🍜 Mains</option>
+              <option value="drinks">🥤 Drinks</option>
+              <option value="desserts">🍨 Desserts</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="modal-actions">
+          <button class="cancel-button" data-close="true">Cancel</button>
+          <button class="primary-button" id="btn-save-new-item">Add Item</button>
+        </div>
+      </div>
     </div>
+
+    <!-- Toast Feedback Notification -->
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
     <script src="app.js"></script>
   </body>
 </html>
